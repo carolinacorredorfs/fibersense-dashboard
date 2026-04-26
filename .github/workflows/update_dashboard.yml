@@ -23,7 +23,7 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -49,30 +49,18 @@ jobs:
             python generate_dashboard.py --person "$PERSON"
           fi
 
-      - name: Deploy to gh-pages branch
+      - name: Move to docs/
         run: |
-          # Configure git
+          mkdir -p docs
+          cp dashboard_*.html docs/
+          touch docs/.nojekyll
+          echo '<meta http-equiv="refresh" content="0; url=dashboard_carolina.html">' > docs/index.html
+          ls -la docs/
+
+      - name: Commit and push docs/
+        run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-
-          # Switch to gh-pages branch
-          git fetch origin gh-pages || true
-          git checkout gh-pages 2>/dev/null || git checkout --orphan gh-pages
-
-          # Remove everything except hidden files
-          git rm -rf . --quiet 2>/dev/null || true
-
-          # Copy generated files back
-          git checkout main -- generate_dashboard.py 2>/dev/null || true
-
-          # Create index redirect
-          echo '<meta http-equiv="refresh" content="0; url=dashboard_carolina.html">' > index.html
-          touch .nojekyll
-
-          # Copy dashboards from the working directory
-          cp /home/runner/work/fibersense-dashboard/fibersense-dashboard/dashboard_*.html . 2>/dev/null || true
-
-          # Commit and push
-          git add .
+          git add docs/
           git diff --staged --quiet || git commit -m "Dashboard updated $(date '+%Y-%m-%d %H:%M')"
-          git push origin gh-pages --force
+          git push origin main
