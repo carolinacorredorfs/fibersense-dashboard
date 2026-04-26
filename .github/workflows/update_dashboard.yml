@@ -52,6 +52,7 @@ jobs:
       - name: Prepare docs/ folder
         run: |
           mkdir -p docs
+          touch docs/.nojekyll
           cp dashboard_*.html docs/
           echo '<meta http-equiv="refresh" content="0; url=dashboard_carolina.html">' > docs/index.html
 
