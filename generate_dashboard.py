@@ -46,22 +46,22 @@ except ImportError:
 # ──────────────────────────────────────────────
 # CONFIGURACIÓN
 # ──────────────────────────────────────────────
-JIRA_BASE_URL  = os.getenv("JIRA_BASE_URL",  "https://fibersense.atlassian.net")
+JIRA_BASE_URL  = os.getenv("JIRA_BASE_URL",  "")
 JIRA_EMAIL     = os.getenv("JIRA_EMAIL",     "")
 JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN", "")
-ASSIGNEE_ID    = "641d74879796ea0a8718cd06"   # overridden at runtime
+ASSIGNEE_ID    = ""   # overridden at runtime from PEOPLE dict
 
 # ── People registry ───────────────────────────────────
 PEOPLE = {
     "carolina": {
-        "id":       "641d74879796ea0a8718cd06",
+        "id":       os.getenv("CAROLINA_ACCOUNT_ID", ""),
         "name":     "Carolina Corredor",
         "initials": "CC",
         "color":    "#2DD4BF",
         "file":     "dashboard_carolina.html",
     },
     "rachel": {
-        "id":       "62fa41b06d26632889ddb123",
+        "id":       os.getenv("RACHEL_ACCOUNT_ID", ""),
         "name":     "Rachel Hatch-Ibarra",
         "initials": "RH",
         "color":    "#2DD4BF",
@@ -759,11 +759,16 @@ def run_for_person(person_key, person_data, output_path, open_browser):
     global ASSIGNEE_ID
     ASSIGNEE_ID = person_data["id"]
 
-    if not JIRA_EMAIL or not JIRA_API_TOKEN:
-        print("❌  Faltan credenciales. Crea un archivo .env con:")
-        print("    JIRA_EMAIL=tu-email@fibersense.com")
-        print("    JIRA_API_TOKEN=tu-api-token")
-        print("\n    Genera tu token en: https://id.atlassian.com/manage-profile/security/api-tokens")
+    if not JIRA_EMAIL or not JIRA_API_TOKEN or not JIRA_BASE_URL:
+        print("❌  Missing credentials. Check your .env file:")
+        print("    JIRA_BASE_URL=https://your-instance.atlassian.net")
+        print("    JIRA_EMAIL=your-email@company.com")
+        print("    JIRA_API_TOKEN=your-api-token")
+        sys.exit(1)
+    if not PEOPLE["carolina"]["id"] or not PEOPLE["rachel"]["id"]:
+        print("❌  Missing account IDs. Add to your .env file:")
+        print("    CAROLINA_ACCOUNT_ID=...")
+        print("    RACHEL_ACCOUNT_ID=...")
         sys.exit(1)
 
     print("⏳  Consultando Jira...")
