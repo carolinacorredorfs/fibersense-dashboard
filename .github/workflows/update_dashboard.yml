@@ -1,1 +1,63 @@
-404: Not Found
+name: Update Fibersense Dashboard
+
+on:
+  workflow_dispatch:
+    inputs:
+      person:
+        description: 'Who to generate for'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - carolina
+          - rachel
+
+  schedule:
+    - cron: '0 22 * * 0'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests python-dotenv
+
+      - name: Generate dashboard(s)
+        env:
+          JIRA_BASE_URL:        ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL:           ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN:       ${{ secrets.JIRA_API_TOKEN }}
+          CAROLINA_ACCOUNT_ID:  ${{ secrets.CAROLINA_ACCOUNT_ID }}
+          RACHEL_ACCOUNT_ID:    ${{ secrets.RACHEL_ACCOUNT_ID }}
+        run: |
+          PERSON="${{ github.event.inputs.person || 'all' }}"
+          if [ "$PERSON" = "all" ]; then
+            python generate_dashboard.py --all
+          else
+            python generate_dashboard.py --person "$PERSON"
+          fi
+
+      - name: Prepare docs/ folder
+        run: |
+          mkdir -p docs
+          cp dashboard_*.html docs/
+          echo '<meta http-equiv="refresh" content="0; url=dashboard_carolina.html">' > docs/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          commit_message: "Dashboard updated"
