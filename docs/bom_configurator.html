@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FiberSense — BoM Configurator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a; --bg-card:#111; --bg-card2:#161616; --bg-input:#0d0d0d;
+  --border:#252525; --border-light:#1c1c1c; --border-focus:#555;
+  --text:#eee; --text-muted:#666; --text-dim:#333;
+  --green:#a8d8b0; --yellow:#f5e6a3; --red:#f4a8a8;
+  --blue:#a8c8f0; --purple:#c8a8e0; --orange:#f5c8a0;
+  --green-dim:#1a2e1d; --yellow-dim:#2e2a10; --red-dim:#2e1515;
+  --blue-dim:#122030; --purple-dim:#201525; --orange-dim:#2a1e0e;
+  --radius:10px; --gap:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13.5px}
+
+/* LAYOUT */
+.app{display:grid;grid-template-columns:420px 1fr;min-height:100vh}
+@media(max-width:900px){.app{grid-template-columns:1fr}}
+
+/* LEFT PANEL */
+.panel-left{background:var(--bg-card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow:hidden}
+.panel-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.logo-mark{width:36px;height:36px;background:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#000;flex-shrink:0;overflow:hidden}
+.logo-mark img{width:100%;height:100%;object-fit:cover}
+.logo-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;line-height:1}
+.logo-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* PROJECTS LIST */
+.projects-header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0}
+.projects-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)}
+.btn-add{display:flex;align-items:center;gap:6px;background:#fff;color:#000;border:none;padding:7px 14px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.btn-add:hover{opacity:.85}
+
+.projects-list{flex:1;overflow-y:auto;padding:8px}
+.projects-list::-webkit-scrollbar{width:4px}
+.projects-list::-webkit-scrollbar-track{background:transparent}
+.projects-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.proj-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .15s;margin-bottom:4px;position:relative}
+.proj-item:hover{background:var(--bg-card2);border-color:var(--border-light)}
+.proj-item.active{background:var(--bg-card2);border-color:var(--border-focus)}
+.proj-item .proj-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.proj-item .proj-info{flex:1;min-width:0}
+.proj-item .proj-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-item .proj-meta{font-size:11px;color:var(--text-muted);margin-top:2px}
+.proj-item .proj-boxes{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;line-height:1;flex-shrink:0}
+.proj-item .proj-del{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--red-dim);color:var(--red);border:none;border-radius:5px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s;font-size:13px}
+.proj-item:hover .proj-del{opacity:1}
+
+.proj-item .prio-dot{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700}
+.p0{background:var(--green-dim);color:var(--green)}
+.p1{background:var(--red-dim);color:var(--red)}
+.p2{background:var(--yellow-dim);color:var(--yellow)}
+.pc{background:var(--green-dim);color:var(--green)}
+
+/* RIGHT PANEL */
+.panel-right{padding:28px 32px;overflow-y:auto;background:var(--bg)}
+.panel-right::-webkit-scrollbar{width:4px}
+.panel-right::-webkit-scrollbar-track{background:transparent}
+.panel-right::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* EMPTY STATE */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--text-dim);text-align:center}
+.empty-state .big-icon{font-size:48px;opacity:.4}
+.empty-state h2{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--text-dim)}
+.empty-state p{font-size:13px;max-width:280px;line-height:1.6}
+
+/* FORM */
+.form-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap}
+.form-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:#fff;line-height:1}
+.form-actions{display:flex;gap:8px}
+.btn-save{background:#fff;color:#000;border:none;padding:9px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.btn-save:hover{opacity:.85}
+.btn-delete{background:var(--red-dim);color:var(--red);border:1px solid var(--red-dim);padding:9px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-delete:hover{opacity:.8}
+.btn-dup{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-dim);padding:9px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-dup:hover{opacity:.8}
+
+/* SECTIONS */
+.form-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px}
+.section-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-grid.cols1{grid-template-columns:1fr}
+@media(max-width:600px){.form-grid,.form-grid.cols3{grid-template-columns:1fr}}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.field input,.field select{background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+.field input:focus,.field select:focus{border-color:var(--border-focus)}
+.field input::placeholder{color:var(--text-dim)}
+.field .hint{font-size:11px;color:var(--text-muted);margin-top:2px;line-height:1.4}
+.field .hint.warn{color:var(--yellow)}
+.field .hint.info{color:var(--blue)}
+
+/* COMPUTED BADGE */
+.computed-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.computed-badge{background:var(--bg-card2);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;text-align:center}
+.computed-badge .cb-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;line-height:1}
+.computed-badge .cb-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-top:3px}
+
+/* BOM PREVIEW */
+.bom-preview{margin-top:0}
+.bom-row{display:grid;grid-template-columns:110px 1fr 60px;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)}
+.bom-row:last-child{border-bottom:none}
+.bom-row .bom-chip{display:inline-flex;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;white-space:nowrap}
+.bom-row .bom-part{font-size:12px}
+.bom-row .bom-part strong{display:block;color:#fff;font-weight:600}
+.bom-row .bom-part span{font-size:11px;color:var(--text-muted)}
+.bom-row .bom-qty{font-family:'Bebas Neue',sans-serif;font-size:20px;text-align:right;color:#fff}
+.chip-sensing{background:var(--blue-dim);color:var(--blue)}
+.chip-miu{background:var(--orange-dim);color:var(--orange)}
+.chip-fw{background:var(--yellow-dim);color:var(--yellow)}
+.chip-fwstd{background:#1e1e1e;color:#888}
+.chip-power{background:var(--green-dim);color:var(--green)}
+.chip-misc{background:#0e2a2a;color:#7dd8cc}
+.chip-fsc{background:var(--purple-dim);color:var(--purple)}
+
+/* TOTAL PRICE */
+.price-bar{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.price-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)}
+.price-val{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;color:#fff}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#fff;color:#000;padding:12px 20px;border-radius:10px;font-weight:600;font-size:13px;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* EXPORT BTN */
+.export-bar{display:flex;gap:8px;margin-bottom:20px}
+.btn-export{display:flex;align-items:center;gap:6px;background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);padding:8px 16px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-export:hover{border-color:var(--border-focus);color:#fff}
+.btn-export svg{width:13px;height:13px}
+
+/* COLLAPSIBLE */
+.bom-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  padding:10px 14px;background:var(--bg-card2);border:1px solid var(--border-light);
+  border-radius:8px;margin-bottom:0;user-select:none;transition:background .15s}
+.bom-toggle:hover{background:#1a1a1a}
+.bom-toggle .tog-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted)}
+.bom-toggle .tog-arrow{font-size:11px;color:var(--text-dim);transition:transform .2s}
+.bom-toggle.open .tog-arrow{transform:rotate(180deg)}
+.bom-collapsible{overflow:hidden;transition:max-height .25s ease;max-height:0}
+.bom-collapsible.open{max-height:9999px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- LEFT: Projects List -->
+  <div class="panel-left">
+    <div class="panel-header">
+      <div class="logo-row">
+        <div class="logo-mark" id="logo-mark" style="background:#000;padding:0;overflow:hidden"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+        <div>
+          <div class="logo-title">BoM Configurator</div>
+          <div class="logo-sub">Internal Use</div>
+        <div id="sync-status" style="font-size:10.5px;color:var(--text-dim);margin-top:2px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="projects-header">
+      <span class="projects-label">Projects <span id="proj-count" style="color:var(--text-dim)">0</span></span>
+      <button class="btn-add" onclick="addProject()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Project
+      </button>
+    </div>
+    <div style="padding:8px 12px 4px;border-bottom:1px solid var(--border)">
+      <input id="proj-search" type="text" placeholder="Search projects…"
+        oninput="renderList()"
+        style="width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);
+               padding:7px 10px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;outline:none">
+    </div>
+
+    <div class="projects-list" id="projects-list"></div>
+  </div>
+
+  <!-- RIGHT: Form + BoM Preview -->
+  <div class="panel-right" id="panel-right">
+    <div class="empty-state" id="empty-state">
+      <div class="big-icon">📋</div>
+      <h2>No Project Selected</h2>
+      <p>Create a new project to configure its Bill of Materials and see the required inventory.</p>
+      <button class="btn-add" style="margin-top:8px" onclick="addProject()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create First Project
+      </button>
+    </div>
+    <div id="form-area" style="display:none"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════
+   DATA
+══════════════════════════════════ */
+const COUNTRIES = {
+  "Argentina":        {cable:"I, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Australia":        {cable:"I, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Austria":          {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Belgium":          {cable:"C, E, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Brazil":           {cable:"C, N, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Canada":           {cable:"A, B, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Chile":            {cable:"C, L, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "China":            {cable:"A, I, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Czech Republic":   {cable:"C, E, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Denmark":          {cable:"C, E, F, K, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Fiji":             {cable:"I, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Finland":          {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "France":           {cable:"C, E, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Germany":          {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Greece":           {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Greenland":        {cable:"C, K, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Hong Kong":        {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Hungary":          {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "India (15A)":      {cable:"M, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "India (5A)":       {cable:"C, D, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Indonesia":        {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Ireland":          {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Israel":           {cable:"C, H, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Italy":            {cable:"C, F, L, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Japan":            {cable:"A, B, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Kenya":            {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Liechtenstein":    {cable:"C, J, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Malaysia":         {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Mexico":           {cable:"A, B, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Mozambique":       {cable:"C, F, M, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Namibia":          {cable:"M, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Netherlands":      {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "New Zealand":      {cable:"I, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Nigeria":          {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Norway":           {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Papua New Guinea": {cable:"I, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Poland":           {cable:"C, E, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Portugal":         {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Qatar":            {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Romania":          {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Russia":           {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Singapore":        {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "Slovakia":         {cable:"C, E, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "South Africa":     {cable:"C, M, N, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "South Korea":      {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Spain":            {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Sweden":           {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Switzerland":      {cable:"C, J, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Taiwan":           {cable:"A, B, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Thailand":         {cable:"A, B, C, O, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "Turkey":           {cable:"C, F, to C19", pdu:"PDUMH20HVATNET", region:"Global"},
+  "UAE":              {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "United Kingdom":   {cable:"G, to C19",    pdu:"PDUMH20HVATNET", region:"Global"},
+  "United States":    {cable:"A, B, to C20", pdu:"PDUMH15ATNETOEM", region:"US"},
+};
+
+/* ══ SHAREPOINT CONFIG ══ */
+const SP_SAVE_URL = "https://default9daf329c2490442aa95d85998fb5f7.0b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/15beac9ad14b498da334ea6fb7507753/triggers/manual/paths/invoke?api-version=1";
+const SP_READ_URL = "https://default9daf329c2490442aa95d85998fb5f7.0b.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/21197305a33a4868a7d49a2aca01e18a/triggers/manual/paths/invoke?api-version=1";
+const USE_SHAREPOINT = true; // set false to use localStorage only
+
+const PRICES = {
+  "C-Band 1.0": 72000, "L-Band 1.1": 72000, "L-Band 1.1 RE": 82000,
+  "Gen2- Rails": 0,
+  "Power Cable Blue": 12, "Power Cable Red": 12,
+  "Copper Patch-2m": 5,
+  "MIU": 1500, "DC Power": 3, "Accessories": 25,
+  "Fiber Patch SC/APC": 172.50, "Fiber Patch SC/UPC": 172.50,
+  "Fiber Patch LC/UPC": 172.50, "Fiber Patch LC/APC": 172.50, "Fiber Patch MU/UPC": 172.50,
+  "Power Cable": 12, "Cisco 1gb Optic": 35, "Cisco 10gb Optic": 80, "Cisco Console Cable": 25,
+  "Fiber Patch - Sensing": 172.50,
+  "FirePower 1120": 1575, "FirePower 1120 Brackets": 0,
+  "FirePower 1010": 700, "RM-CI-T8": 125,
+  "CSF1220CX-TD-K9": 3677.76, "CSF1200C-RACK-MNT": 655.13,
+  "Fiber Patch-2m-SMOF-DUP": 12, "Copper Patch-2m": 5,
+  "PDUMH20HVATNET": 850, "PDUMH15ATNETOEM": 850,
+  "PDU Copper Patch": 5, "PDU Power Cable": 12,
+  "Screws/Nuts": 25, "Velcro": 20, "LC Cleaner": 75, "SC Cleaner": 75,
+  "FS-CORE": 100, "POE-Power Injector": 50, "FSC Copper Patch": 5,
+  "Pouch": 15, "FSC Power Cable": 12,
+  "Fiber Patch SC/APC 10m": 20,
+  "Fiber Patch SC/UPC 10m": 20,
+  "Fiber Patch LC/UPC 10m": 20,
+  "Fiber Patch LC/APC 10m": 20,
+  "Fiber Patch MU/UPC 10m": 20,
+};
+
+const PROD_COLORS = {DigitalMarine:"var(--orange)",DigitalLeak:"var(--blue)",DigitalAsset:"var(--purple)"};
+const PRIO_COLORS = {P0:"p0",P1:"p1",P2:"p2",Closed:"pc"};
+
+let projects = [];
+let activeId  = null;
+let nextId    = 1;
+
+function uid() { return nextId++; }
+
+function defaultProject() {
+  return {
+    id: uid(),
+    name: "New Project",
+    priority: "P2",
+    status: "Forecast",
+    products: ["DigitalLeak"],
+    product: "DigitalLeak",
+    unit: "C-Band 1.0",
+    region: "Global",
+    country: "United Kingdom",
+    ip_link: "Unknown",
+    connector: "Unknown",
+    cisco_optic: "1gb", // "1gb" | "10gb"
+    saved: false,
+    firewall: "Unknown",
+    miu: false,
+    pdu_type: "PDUMH20HVATNET",
+    ports: 1,
+    boxes: 1,
+    close_date: "",
+    start_date: "",
+  };
+}
+
+/* ══ BOM CALCULATION ══ */
+function calcBom(p) {
+  const isUS     = p.region === "US";
+  const products = p.products || [p.product];
+  const isMarine = products.includes("DigitalMarine");
+  const fwCount  = Math.ceil(p.boxes / 6);
+  const bom      = [];
+
+  const add = (type, chip, part, desc, qty, pending) => {
+    if (qty <= 0) return;
+    bom.push({ type, chip, part, desc, qty, pending: !!pending });
+  };
+
+  // Sensing Unit
+  add("Sensing Unit","chip-sensing", p.unit,              "2 Port Sensing Unit - "+p.unit,                             p.boxes);
+  add("Sensing Unit","chip-sensing","Gen2- Rails",        "2 Port Sensing Unit - Rails",                               p.boxes);
+  add("Sensing Unit","chip-sensing","Power Cable Blue",   isUS?"C13 to NEMA 5-15P Blue – 6ft":"C13 to C14 - Blue – 6ft", p.boxes);
+  add("Sensing Unit","chip-sensing","Power Cable Red",    isUS?"C13 to NEMA 5-15P Red – 6ft":"C13 to C14 - Red – 6ft",   p.boxes);
+  add("Sensing Unit","chip-sensing","Copper Patch-2m",    "2M CAT6A Snagless Straight-Through Cable, Black",           p.boxes);
+  // Fiber Patch - Sensing: 1 per port, based on selected connector
+  if (p.connector && p.connector !== "Unknown") {
+    const fpDescs = {
+      "LC/UPC":"DIAMOND E-2000 PS APC to F-3000 LC/UPC terminated on cable 9/125, YE",
+      "LC/PC": "DIAMOND E-2000 PS APC to F-3000 LC/PC terminated on cable 9/125, YE",
+      "LC/APC":"DIAMOND E-2000 PS APC to F-3000 LC/APC terminated on cable 9/125, YE",
+      "SC/UPC":"DIAMOND E-2000 PS APC to F-3000 SC/UPC terminated on cable 9/125, YE",
+      "SC/PC": "DIAMOND E-2000 PS APC to F-3000 SC/PC terminated on cable 9/125, YE",
+      "SC/APC":"DIAMOND E-2000 PS APC to F-3000 SC/APC terminated on cable 9/125, YE",
+    };
+    add("Sensing Unit","chip-sensing","Fiber Patch - Sensing", fpDescs[p.connector]||"Fiber Patch - Sensing", p.ports * p.boxes);
+  }
+
+  // MIU
+  if (isMarine) {
+    add("MIU","chip-miu","MIU",                "Marine Interface Unit",                                   p.boxes);
+    add("MIU","chip-miu","DC Power",           "48V DC Power - 1 amp fuses",                              p.boxes*2);
+    add("MIU","chip-miu","Accessories",        "Amazon Crimper and Ring Terminals (red, blue, yellow)",   p.boxes);
+    add("MIU","chip-miu","Fiber Patch SC/APC", "LC/UCP to SC/APC 10m — Most common",                     p.boxes);
+    add("MIU","chip-miu","Fiber Patch SC/UPC", "LC/UCP to SC/UPC 10m",                                    p.boxes);
+    add("MIU","chip-miu","Fiber Patch LC/UPC", "LC/UCP to LC/UPC 10m",                                    p.boxes);
+    add("MIU","chip-miu","Fiber Patch LC/APC", "LC/UCP to LC/APC 10m",                                    p.boxes);
+    add("MIU","chip-miu","Fiber Patch MU/UPC", "LC/UCP to MU/UPC 10m",                                    p.boxes);
+  }
+
+  // Firewall — model-specific unit + brackets + IP Link connectivity
+  const fwPwr2 = isUS ? "C13 to NEMA 5-15P Black – 6ft" : "C13 to C20 - Black – 6ft";
+  if (p.firewall === "FP-1120") {
+    add("Firewall","chip-fw","FirePower 1120",         "Cisco Firepower 1120 NGFW Appliance, 1U",                   fwCount);
+    add("Firewall","chip-fw","FirePower 1120 Brackets","Brakets Cisco Firepower 1120",                              fwCount);
+  } else if (p.firewall === "FP-1010") {
+    add("Firewall","chip-fw","FirePower 1010",         "Cisco Firepower 1010 NGFW Appliance, 1U",                   fwCount);
+    add("Firewall","chip-fw","RM-CI-T8",               "ISR Mounting Kit - Rack Mount Meraki Cisco RMKT Firepower 1010 / ASA 5506-X",        fwCount);
+  } else if (p.firewall === "FP-1220") {
+    add("Firewall","chip-fw","CSF1220CX-TD-K9",        "Secure Firewall 1220 Appliance, Compact, Threat Defense",   fwCount);
+    add("Firewall","chip-fw","CSF1200C-RACK-MNT",      "Rackmount Kit (CSF1200C-RACK-MNT=)",                        fwCount);
+  } else {
+    add("Firewall","chip-fw","Firewall Unit",           "FP-1010 / FP-1120 / FP-1220 — select IP Link to unlock",   fwCount, true);
+  }
+  // Cisco 1gb Optic is default for ALL firewalls
+  add("Firewall","chip-fw","Cisco 1gb Optic", "CISCO, 1000BASE-LX/LH SFP transceiver module, MMF/SMF, 1310nm, Pivl", fwCount);
+  // Additional items based on IP Link
+  if (p.ip_link === "Fiber") {
+    add("Firewall","chip-fw","Fiber Patch-2m-SMOF-DUP","2M LC/LC 9/125 Singlemode Fiber Patch Cable, Yellow",       fwCount*2);
+    if (p.cisco_optic === "10gb") {
+      add("Firewall","chip-fw","Cisco 10gb Optic","CISCO SFP-10G-LR Compatible 10GBASE-LR SFP+1310nm 10km DOM Duplex LC/UPC SMF Optical Transceiver Module", fwCount);
+    }
+  } else if (p.ip_link === "Copper") {
+    add("Firewall","chip-fw","Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", fwCount);
+  } else if (p.ip_link === "Copper") {
+    add("Firewall","chip-fw","Copper Patch-2m",      "2M CAT6A Snagless Straight-Through Cable, Black",          fwCount);
+    add("Firewall","chip-fw","Cisco 1gb Optic",         "CISCO, 1000BASE-LX/LH SFP transceiver module, MMF/SMF, 1310nm, Pivl",   fwCount);
+  } else {
+    add("Firewall","chip-fw","Cisco 1gb Optic",         "CISCO, 1000BASE-LX/LH SFP transceiver module, MMF/SMF, 1310nm, Pivl",   fwCount, true);
+  }
+  add("Firewall","chip-fw","Power Cable",     fwPwr2,                                                 fwCount);
+  add("Firewall","chip-fw","Cisco Console Cable","Console Cable - USB to RJ45, 6ft.",                    fwCount);
+
+  // Power / PDU — skip if No PDU selected
+  if (p.pdu_type && p.pdu_type !== "None") {
+    const pduModel2 = p.pdu_type;
+    const pduDesc2  = pduModel2==="PDUMH20HVATNET"
+      ? "Eaton Tripp Lite 3.8kW Switched ATS PDU — 8×C13 + 2×C19, 1U"
+      : "Tripplite PDU Switched ATS 120V 15A 5-15R 8 Outlet 2 5-15P Horizontal";
+    const countryInfo2 = COUNTRIES[p.country] || {cable:"G, to C19"};
+    const pduPwr2 = countryInfo2.cable + " (" + p.country + ")";
+    if (isUS) {
+      add("Power","chip-power","PDUMH15ATNETOEM", pduDesc2,                                         fwCount);
+      add("Power","chip-power","PDU Copper Patch","2M CAT6A Snagless Straight-Through Cable, Black", fwCount);
+      add("Power","chip-power","PDU Power Cable", "A, B, to C20 (United States)",                   fwCount*2);
+    } else if (p.country === "Australia") {
+      add("Power","chip-power","PDUMH20HVATNET",  pduDesc2,                                         fwCount);
+      add("Power","chip-power","PDU Copper Patch","2M CAT6A Snagless Straight-Through Cable, Black", fwCount);
+      add("Power","chip-power","PDU Power Cable", "I, to C19 (Australia)",                          fwCount*2);
+    } else {
+      add("Power","chip-power","PDUMH20HVATNET",  pduDesc2,                                         fwCount);
+      add("Power","chip-power","PDU Copper Patch","2M CAT6A Snagless Straight-Through Cable, Black", fwCount);
+      add("Power","chip-power","PDU Power Cable", pduPwr2,                                          fwCount*2);
+    }
+  }
+  // Misc Items
+  add("Misc Items","chip-misc","Screws/Nuts",  "M6 Cage nuts/screw (50 Pack)",                        1);
+  add("Misc Items","chip-misc","Velcro",        "5m Velcro",                                            1);
+  add("Misc Items","chip-misc","LC Cleaner",    "NEOCLEAN-E LC/MU 1.25mm Pen One-Push Cleaner",        1);
+  add("Misc Items","chip-misc","SC Cleaner",    "NEOCLEAN-E SC/FC/ST/LSH 2.5mm Pen One-Push Cleaner",  1);
+
+  // FS-Core
+  const fscPwr = isUS ? "C13 to NEMA 5-15P Black – 6ft" : "C13 to C14 - Black – 6ft";
+  add("FS-Core","chip-fsc","FS-CORE",          "FS Core",                                              1);
+  add("FS-Core","chip-fsc","POE-Power Injector","POE-Power Injector with C13",                         1);
+  add("FS-Core","chip-fsc","FSC Copper Patch", "2M CAT6A Snagless Straight-Through Cable, Black",      2);
+  add("FS-Core","chip-fsc","Pouch",            "Pouch",                                                1);
+  add("FS-Core","chip-fsc","FSC Power Cable",  fscPwr,                                                 1);
+
+  return bom;
+}
+
+function calcPrice(bom) {
+  return bom.reduce((s,r) => s + (PRICES[r.part]||PRICES[r.part]||0) * r.qty, 0);
+}
+
+/* ══ RENDER LIST ══ */
+function renderList() {
+  const el = document.getElementById("projects-list");
+  document.getElementById("proj-count").textContent = projects.length;
+  if (!projects.length) {
+    el.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-dim);font-size:12px">No projects yet</div>`;
+    return;
+  }
+  const searchEl = document.getElementById("proj-search");
+  const q = searchEl ? searchEl.value.toLowerCase() : "";
+  const sorted = [...projects].sort((a,b) => a.name.localeCompare(b.name));
+  const filtered = q ? sorted.filter(p => p.name.toLowerCase().includes(q) || (p.products||[p.product]).join(" ").toLowerCase().includes(q) || p.country.toLowerCase().includes(q)) : sorted;
+  if (!filtered.length) {
+    el.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-dim);font-size:12px">No matches for "${q}"</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(p => {
+    const prods = p.products || [p.product];
+    const prodColor = prods.length>1 ? "var(--purple)" : PROD_COLORS[prods[0]] || "#888";
+    const prioClass = PRIO_COLORS[p.status==="Closed"?"Closed":p.priority] || "p2";
+    const fwCount   = Math.ceil(p.boxes / 6);
+    return `
+      <div class="proj-item${p.id===activeId?' active':''}" onclick="selectProject(${p.id})">
+        <div class="proj-dot" style="background:${prodColor}"></div>
+        <div class="proj-info">
+          <div class="proj-name">${p.name}${!p.saved?'<span style="margin-left:6px;font-size:10px;font-weight:600;color:var(--yellow);background:var(--yellow-dim);padding:1px 6px;border-radius:10px">DRAFT</span>':''}</div>
+          <div class="proj-meta" style="display:flex;align-items:center;gap:6px;margin-top:3px">
+            <span class="prio-dot ${prioClass}">${p.status==="Closed"?"Closed":p.priority}</span>
+            <span>${(p.products||[p.product]).join(" + ")}</span>
+            <span style="color:var(--text-dim)">·</span>
+            <span>${p.country||"—"}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="proj-boxes">${p.boxes}</div>
+          <div style="font-size:10px;color:var(--text-muted)">${p.boxes===1?'box':'boxes'}</div>
+        </div>
+        <button class="proj-del" onclick="deleteProject(event,${p.id})">✕</button>
+      </div>`;
+  }).join('');
+}
+
+/* ══ RENDER FORM ══ */
+function renderForm(p) {
+  if (!p.products) p.products = [p.product || "DigitalLeak"];
+  const bom      = calcBom(p);
+  const price    = calcPrice(bom);
+  const fwCount  = Math.ceil(p.boxes / 6);
+  const products = p.products || [p.product];
+  const isMarine = products.includes("DigitalMarine");
+
+  document.getElementById("empty-state").style.display = "none";
+  const fa = document.getElementById("form-area");
+  fa.style.display = "block";
+
+  fa.innerHTML = `
+    <div class="form-header">
+      <div>
+        <div class="form-title">${p.name || "Unnamed Project"}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${p.product} · ${p.country||"—"} · ${p.unit}</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-dup" onclick="duplicateProject(${p.id})">⧉ Duplicate</button>
+        <button class="btn-delete" onclick="deleteProject(null,${p.id})">Delete</button>
+        <button class="btn-save" onclick="saveWithValidation(${p.id})">Save</button>
+      </div>
+    </div>
+
+    <!-- PROJECT INFO -->
+    <div class="form-section">
+      <div class="section-title">Project Info</div>
+      <div class="form-grid cols1">
+        <div class="field">
+          <label>Project / Site Name</label>
+          <input type="text" value="${p.name}" id="field-name" oninput="updateName(${p.id},this.value)" placeholder="Enter site name">
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCT CONFIG -->
+    <div class="form-section">
+      <div class="section-title">Product Configuration</div>
+      <div class="form-grid cols3">
+        <div class="field full" style="grid-column:1/-1">
+          <label>Product(s) — select one or more</label>
+          <div style="display:flex;gap:8px;margin-top:2px;flex-wrap:wrap">
+            ${["DigitalMarine","DigitalLeak","DigitalAsset"].map(v=>{
+              const active = p.products.includes(v);
+              const colors = {DigitalMarine:"var(--orange)",DigitalLeak:"var(--blue)",DigitalAsset:"var(--purple)"};
+              const dimColors = {DigitalMarine:"var(--orange-dim)",DigitalLeak:"var(--blue-dim)",DigitalAsset:"var(--purple-dim)"};
+              return `<button onclick="toggleProduct(${p.id},'${v}')" style="
+                padding:8px 18px;border-radius:8px;border:1px solid ${active?colors[v]:"var(--border)"};
+                background:${active?dimColors[v]:"var(--bg-input)"};color:${active?colors[v]:"var(--text-muted)"};
+                font-family:'DM Sans',sans-serif;font-size:13px;font-weight:${active?"700":"400"};
+                cursor:pointer;transition:all .15s">${v}</button>`;
+            }).join('')}
+          </div>
+          <div class="hint info" style="margin-top:6px">${p.products.includes("DigitalMarine")?"✓ MIU items included":"Select DigitalMarine to include MIU"}</div>
+        </div>
+        <div class="field">
+          <label>Sensing Unit</label>
+          <select onchange="updateField(${p.id},'unit',this.value)">
+            ${["C-Band 1.0","L-Band 1.1","L-Band 1.1 RE"].map(v=>`<option${p.unit===v?" selected":""}>${v}</option>`).join('')}
+          </select>
+        </div>
+
+      </div>
+      <div class="form-grid cols3" style="margin-top:12px">
+        <div class="field">
+          <label>Region</label>
+          <select onchange="updateRegion(${p.id},this.value)">
+            ${["Global","US"].map(v=>`<option${p.region===v?" selected":""}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Country</label>
+          <select onchange="updateCountry(${p.id},this.value)" ${p.region==="US"?"disabled style='opacity:.4;cursor:not-allowed'":""}>
+            ${Object.keys(COUNTRIES).map(v=>`<option${p.country===v?" selected":""}>${v}</option>`).join('')}
+          </select>
+          <div class="hint ${p.region==="US"?"warn":"info"}">${p.region==="US"?"🔒 Locked — US region":"Power Cable: "+( COUNTRIES[p.country]?.cable || "—")}</div>
+        </div>
+        <div class="field">
+          <label>PDU Model</label>
+          <select onchange="updateField(${p.id},'pdu_type',this.value)">
+            <option value="None"${p.pdu_type==="None"?" selected":""}>No PDU required</option>
+            <option value="PDUMH20HVATNET"${p.pdu_type==="PDUMH20HVATNET"?" selected":""}>PDUMH20HVATNET (Global)</option>
+            <option value="PDUMH15ATNETOEM"${p.pdu_type==="PDUMH15ATNETOEM"?" selected":""}>PDUMH15ATNETOEM (US)</option>
+          </select>
+          <div class="hint info" style="font-size:10.5px">
+            ${p.pdu_type==="None"?"No PDU items will be added to BoM":"Auto-set by Region — override if needed"}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HARDWARE -->
+    <div class="form-section">
+      <div class="section-title">Hardware Quantities</div>
+      <div class="form-grid cols3">
+        <div class="field">
+          <label>Boxes (Sensing Units)</label>
+          <input type="number" min="1" max="100" value="${p.boxes}" oninput="updateField(${p.id},'boxes',+this.value||1)">
+          <div class="hint">1 Firewall per max 6 boxes</div>
+        </div>
+        <div class="field">
+          <label>Ports</label>
+          <input type="number" min="1" max="200" value="${p.ports}" oninput="updateField(${p.id},'ports',+this.value||1)">
+          <div class="hint">Drives Copper Patch qty</div>
+        </div>
+        <div class="field">
+          <label>IP Link</label>
+          <select onchange="updateIPLink(${p.id},this.value)">
+            ${["Unknown","Copper","Fiber"].map(v=>`<option${p.ip_link===v?" selected":""}>${v}</option>`).join('')}
+          </select>
+          <div class="hint ${p.ip_link==="Unknown"?"warn":"info"}">
+            ${p.ip_link==="Unknown"?"⚠️ Sets Firewall to Unknown":p.ip_link==="Copper"?"Allows FP-1010, FP-1120, FP-1220":"Allows FP-1120, FP-1220 only"}
+          </div>
+        </div>
+        <div class="field">
+          <label>Firewall Model</label>
+          <select onchange="updateField(${p.id},'firewall',this.value)" ${p.ip_link==="Unknown"?"disabled style='opacity:.4;cursor:not-allowed'":""}>
+            ${p.ip_link==="Unknown"
+              ? `<option selected>Unknown ⚠️</option>`
+              : p.ip_link==="Copper"
+                ? ["FP-1010","FP-1120","FP-1220"].map(v=>`<option${p.firewall===v?" selected":""}>${v}</option>`).join('')
+                : ["FP-1120","FP-1220"].map(v=>`<option${p.firewall===v?" selected":""}>${v}</option>`).join('')
+            }
+          </select>
+          <div class="hint ${p.ip_link==="Unknown"?"warn":"info"}">
+            ${p.ip_link==="Unknown"?"🔒 Select IP Link first to unlock":p.ip_link==="Copper"?"FP-1010 · FP-1120 · FP-1220 available":"FP-1120 · FP-1220 only (Fiber requires SFP)"}
+          </div>
+        </div>
+        <div class="field">
+          <label>Cisco Optic</label>
+          <select onchange="updateField(${p.id},'cisco_optic',this.value)">
+            <option value="1gb"${(!p.cisco_optic||p.cisco_optic==="1gb")?" selected":""}>Cisco 1gb Optic (default)</option>
+            <option value="10gb"${p.cisco_optic==="10gb"?" selected":""}>Cisco 10gb Optic (Fiber only)</option>
+          </select>
+          <div class="hint info">
+            ${p.cisco_optic==="10gb"?"10gb Optic added alongside 1gb":"1gb Optic included by default on all firewalls"}
+          </div>
+        </div>
+        <div class="field">
+          <label>Connector Type</label>
+          <select onchange="updateField(${p.id},'connector',this.value)">
+            <option value="Unknown"${p.connector==="Unknown"||!p.connector?" selected":""}>Unknown ⚠️</option>
+            <option value="LC/UPC"${p.connector==="LC/UPC"?" selected":""}>LC/UPC</option>
+            <option value="LC/PC"${p.connector==="LC/PC"?" selected":""}>LC/PC</option>
+            <option value="LC/APC"${p.connector==="LC/APC"?" selected":""}>LC/APC</option>
+            <option value="SC/UPC"${p.connector==="SC/UPC"?" selected":""}>SC/UPC</option>
+            <option value="SC/PC"${p.connector==="SC/PC"?" selected":""}>SC/PC</option>
+            <option value="SC/APC"${p.connector==="SC/APC"?" selected":""}>SC/APC</option>
+          </select>
+          <div class="hint ${(!p.connector||p.connector==='Unknown')?'warn':'info'}">
+            ${(!p.connector||p.connector==='Unknown')?'⚠️ Select connector to add Fiber Patch cables':'✓ Fiber Patch cables added to Sensing Unit'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VALIDATION SUMMARY -->
+    ${(()=>{
+      const errs = validateProject(p);
+      return errs.length > 0
+        ? `<div style="background:var(--red-dim);border:1px solid var(--red);border-radius:8px;padding:11px 16px;margin-bottom:0;font-size:12px;color:var(--red)">
+            ⚠️ <strong>Incomplete:</strong> ${errs.join(" · ")}
+           </div>`
+        : `<div style="background:var(--green-dim);border:1px solid var(--green);border-radius:8px;padding:11px 16px;margin-bottom:0;font-size:12px;color:var(--green)">
+            ✓ All required fields complete — ready to save
+           </div>`;
+    })()}
+
+    <!-- COMPUTED SUMMARY -->
+    <div class="computed-row">
+      <div class="computed-badge">
+        <div class="cb-val">${p.boxes}</div>
+        <div class="cb-label">Boxes</div>
+      </div>
+      <div class="computed-badge">
+        <div class="cb-val">${fwCount}</div>
+        <div class="cb-label">Firewalls</div>
+      </div>
+      <div class="computed-badge">
+        <div class="cb-val">${p.pdu_type==="None"?"—":fwCount}</div>
+        <div class="cb-label">PDUs</div>
+      </div>
+      <div class="computed-badge">
+        <div class="cb-val">${isMarine?p.boxes:0}</div>
+        <div class="cb-label">MIUs</div>
+      </div>
+    </div>
+
+    <!-- PRICE BAR -->
+    <div class="price-bar">
+      <div class="price-label">BoM Total Price (Est.)</div>
+      <div class="price-val">$${price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+    </div>
+
+    <!-- BOM PREVIEW -->
+    <div class="form-section" style="padding:0;overflow:hidden">
+      <div class="bom-toggle" id="bom-tog-${p.id}" onclick="toggleBom(${p.id})">
+        <span class="tog-title">Bill of Materials Preview <span style="color:var(--text-dim);font-weight:400">(${bom.length} items · $${price.toLocaleString("en-US",{minimumFractionDigits:2})})</span></span>
+        <span class="tog-arrow">▼</span>
+      </div>
+      <div class="bom-collapsible" id="bom-col-${p.id}">
+        <div style="padding:0 0 4px">
+        ${bom.map(r=>`
+          <div class="bom-row" style="padding-left:14px;padding-right:14px">
+            <span class="bom-chip ${r.chip}">${r.type}</span>
+            <div class="bom-part">
+              <strong>${r.part}${r.pending?" ⚠️":""}</strong>
+              <span>${r.desc}</span>
+            </div>
+            <div class="bom-qty" style="color:${r.pending?"var(--yellow)":"#fff"}">${r.qty}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPORT -->
+    <div class="export-bar">
+      <button class="btn-export" onclick="exportXLSX(${p.id})" style="border-color:var(--green-dim);color:var(--green)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export This Project (.xlsx)
+      </button>
+      <button class="btn-export" onclick="exportAllXLSX()" style="border-color:var(--purple-dim);color:var(--purple)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export All Projects — Consolidated (.xlsx)
+      </button>
+    </div>
+  `;
+}
+
+/* ══ ACTIONS ══ */
+function validateProject(p) {
+  const errors = [];
+  if (!p.name || p.name.trim() === "" || p.name === "New Project") errors.push("Project / Site Name");
+  // Duplicate name check — no two saved projects can share the same name
+  const duplicate = projects.find(x => x.id !== p.id && x.saved && x.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+  if (duplicate) errors.push('Site Name "' + p.name + '" already exists — use a unique name');
+  if (!p.products || !p.products.length) errors.push("Product");
+  if (!p.unit) errors.push("Sensing Unit");
+  if (!p.region) errors.push("Region");
+  if (!p.country) errors.push("Country");
+  if (!p.boxes || p.boxes < 1) errors.push("Boxes");
+  if (!p.ports  || p.ports  < 1) errors.push("Ports");
+  if (!p.ip_link || p.ip_link === "Unknown") errors.push("IP Link");
+  if (!p.firewall || p.firewall === "Unknown") errors.push("Firewall Model");
+  if (!p.connector || p.connector === "Unknown") errors.push("Connector Type");
+  return errors;
+}
+
+function showValidationErrors(errors) {
+  const msg = "⚠️ Please complete the following fields before saving:\n\n• " + errors.join("\n• ");
+  alert(msg);
+}
+
+function addProject() {
+  const p = defaultProject();
+  projects.push(p);
+  selectProject(p.id);
+  renderList();
+  saveLocal();
+  saveToSharePoint(p);
+  toast("New project created");
+}
+
+function selectProject(id) {
+  activeId = id;
+  const p = projects.find(x=>x.id===id);
+  if (p) {
+    renderList();
+    renderForm(p);
+    document.getElementById("panel-right").scrollTop = 0;
+  }
+}
+
+function toggleProduct(id, product) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  if (!p.products) p.products = [p.product];
+  if (p.products.includes(product)) {
+    // Don't allow deselecting all
+    if (p.products.length === 1) return;
+    p.products = p.products.filter(x=>x!==product);
+  } else {
+    p.products.push(product);
+  }
+  // Keep legacy p.product as first selected for backwards compat
+  p.product = p.products[0];
+  updateField(id, 'products', p.products);
+}
+
+function saveWithValidation(id) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  const errors = validateProject(p);
+  if (errors.length > 0) {
+    showValidationErrors(errors);
+    return;
+  }
+  p.saved = true;
+  saveLocal();
+  saveToSharePoint(p);
+  renderList();
+  renderForm(p);
+  toast("✓ Saved");
+}
+
+function updateName(id, value) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  p.name = value;
+  const titleEl = document.querySelector('.form-title');
+  if (titleEl) titleEl.textContent = value || "Unnamed Project";
+  renderList();
+  saveProjects();
+}
+
+function updateField(id, field, value) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  p[field] = value;
+  renderList();
+  renderForm(p);
+}
+
+function updateIPLink(id, ip_link) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  p.ip_link = ip_link;
+  // Auto-adjust firewall model based on IP Link
+  if (ip_link === "Unknown") {
+    p.firewall = "Unknown";
+  } else if (ip_link === "Copper") {
+    // Keep current selection if valid for Copper, else default to FP-1010
+    if (!["FP-1010","FP-1120","FP-1220"].includes(p.firewall)) p.firewall = "FP-1010";
+  } else if (ip_link === "Fiber") {
+    // FP-1010 not compatible with Fiber — upgrade to FP-1120
+    if (!["FP-1120","FP-1220"].includes(p.firewall)) p.firewall = "FP-1120";
+  }
+  renderList();
+  renderForm(p);
+}
+
+function updateRegion(id, region) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  p.region = region;
+  if (region === "US") {
+    p.country  = "United States";
+    p.pdu_type = "PDUMH15ATNETOEM";
+  } else {
+    p.pdu_type = "PDUMH20HVATNET";
+  }
+  renderList();
+  renderForm(p);
+}
+
+function updateCountry(id, country) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  p.country = country;
+  const info = COUNTRIES[country] || {pdu:"PDUMH20HVATNET", region:"Global"};
+  if (p.pdu_type !== "None") p.pdu_type = info.pdu;
+  p.region   = info.region;
+  // Auto location code
+
+  renderList();
+  renderForm(p);
+}
+
+function deleteProject(e, id) {
+  if (e) e.stopPropagation();
+  projects = projects.filter(x=>x.id!==id);
+  if (activeId === id) {
+    activeId = projects.length ? projects[projects.length-1].id : null;
+    if (activeId) renderForm(projects.find(x=>x.id===activeId));
+    else {
+      document.getElementById("empty-state").style.display = "";
+      document.getElementById("form-area").style.display = "none";
+    }
+  }
+  renderList();
+  saveProjects();
+  toast("Project deleted");
+}
+
+function duplicateProject(id) {
+  const src = projects.find(x=>x.id===id);
+  if (!src) return;
+  const dup = { ...src, id: uid(), name: src.name+" (copy)" };
+  projects.push(dup);
+  selectProject(dup.id);
+  renderList();
+  saveLocal();
+  saveToSharePoint(dup);
+  toast("Project duplicated");
+}
+
+/* ══ EXCEL EXPORT ══ */
+
+const HEADER_FILL   = { patternType:"solid", fgColor:{rgb:"000000"} };
+const HEADER_FONT   = { bold:true, color:{rgb:"FFFFFF"}, name:"Arial", sz:10 };
+const TITLE_FONT    = { bold:true, name:"Arial", sz:12, color:{rgb:"FFFFFF"} };
+const BODY_FONT     = { name:"Arial", sz:10 };
+const PENDING_FILL  = { patternType:"solid", fgColor:{rgb:"2E2A10"} };
+const PENDING_FONT  = { name:"Arial", sz:10, color:{rgb:"F5E6A3"} };
+const TOTAL_FILL    = { patternType:"solid", fgColor:{rgb:"161616"} };
+const TOTAL_FONT    = { bold:true, name:"Arial", sz:10, color:{rgb:"FFFFFF"} };
+const ALT_FILL      = { patternType:"solid", fgColor:{rgb:"111111"} };
+const BORDER = {
+  top:{style:"thin",color:{rgb:"252525"}}, bottom:{style:"thin",color:{rgb:"252525"}},
+  left:{style:"thin",color:{rgb:"252525"}}, right:{style:"thin",color:{rgb:"252525"}}
+};
+
+function cell(v, opts={}) {
+  const t = typeof v === "number" ? "n" : "s";
+  const c = { v, t, s: { font: BODY_FONT, border: BORDER, alignment:{vertical:"center"}, ...opts.s } };
+  if (opts.fmt) c.z = opts.fmt;
+  return c;
+}
+
+function buildProjectSheet(wb, p) {
+  if (!p.products) p.products = [p.product || "DigitalLeak"];
+  const bom      = calcBom(p);
+  const fwCount  = Math.ceil(p.boxes / 6);
+  const price    = calcPrice(bom);
+  const ws       = {};
+  let r          = 0;
+
+  // Helper
+  const set = (row, col, v, s={}) => {
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = { v, t: typeof v==="number"?"n":"s", s: { font:BODY_FONT, border:BORDER, alignment:{vertical:"center"}, ...s } };
+  };
+  const setN = (row, col, v, s={}) => {
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = { v, t:"n", s: { font:BODY_FONT, border:BORDER, alignment:{vertical:"center",horizontal:"right"}, ...s }, z:"#,##0" };
+  };
+  const setC = (row, col, v, s={}) => {
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = { v, t:"n", s: { font:BODY_FONT, border:BORDER, alignment:{vertical:"center",horizontal:"right"}, ...s }, z:'"$"#,##0.00' };
+  };
+  const merge = (rs,re,cs,ce) => { if(!ws["!merges"]) ws["!merges"]=[]; ws["!merges"].push({s:{r:rs,c:cs},e:{r:re,c:ce}}); };
+
+  // ── TITLE ROW ──
+  set(r,0, "FiberSense — Bill of Materials", {font:{...TITLE_FONT}, fill:{patternType:"solid",fgColor:{rgb:"000000"}}, alignment:{horizontal:"left",vertical:"center"}});
+  merge(r,r,0,5);
+  r++;
+
+  // ── PROJECT INFO BLOCK ──
+  const INFO = [
+    ["Site / Project", p.name],  ["Priority", p.priority],
+    ["Status", p.status],         ["Product", p.product],
+    ["Sensing Unit", p.unit],     ["Region", p.region],
+    ["Country", p.country],       ["Location", p.country],
+    ["IP Link", p.ip_link],       ["Firewall Model", p.firewall],
+    ["PDU Model", p.pdu_type],    ["Boxes", p.boxes],
+    ["Ports", p.ports],           ["Firewalls", fwCount],
+    ["PDUs", fwCount],            ["Close Date", p.close_date||"TBD"],
+    ["Est. Start", p.start_date||"TBD"],
+  ];
+  const hdrS = {font:HEADER_FONT, fill:HEADER_FILL, border:BORDER, alignment:{vertical:"center"}};
+
+  // Info in 2 columns (label | value | label | value)
+  INFO.forEach(([label, val], i) => {
+    const row = r + Math.floor(i/2);
+    const col = (i%2) * 2;
+    const isNum = typeof val === "number";
+    set(row, col,   label, {font:{...BODY_FONT,bold:true,color:{rgb:"888888"}}, fill:{patternType:"solid",fgColor:{rgb:"111111"}}, border:BORDER});
+    if (isNum) setN(row, col+1, val, {fill:{patternType:"solid",fgColor:{rgb:"161616"}}});
+    else        set(row, col+1, String(val), {fill:{patternType:"solid",fgColor:{rgb:"161616"}}});
+  });
+  r += Math.ceil(INFO.length/2) + 1;
+
+  // ── BOM TABLE HEADER ──
+  const COLS = ["Type","Part","Description","Qty Required","Unit Price (USD)","Total Price (USD)"];
+  COLS.forEach((h,i) => set(r, i, h, {font:HEADER_FONT, fill:HEADER_FILL, border:BORDER, alignment:{horizontal:"center",vertical:"center"}}));
+  r++;
+
+  // ── BOM ROWS ──
+  let typeGroup = "";
+  bom.forEach((row, idx) => {
+    const up   = PRICES[row.part.replace(/^\d+[a-z]?_/,"")] || PRICES[row.part] || 0;
+    const tot  = up * row.qty;
+    const fill = row.pending ? PENDING_FILL : (idx%2===0 ? {patternType:"solid",fgColor:{rgb:"111111"}} : {patternType:"solid",fgColor:{rgb:"161616"}});
+    const font = row.pending ? PENDING_FONT : BODY_FONT;
+    const s    = { fill, border:BORDER, alignment:{vertical:"center"} };
+    const sR   = { fill, border:BORDER, alignment:{vertical:"center",horizontal:"right"} };
+
+    // Type — only show when group changes
+    const typeLabel = row.type !== typeGroup ? row.type : "";
+    typeGroup = row.type;
+
+    set(r, 0, typeLabel,   {...s, font:{...font, bold:true}});
+    set(r, 1, row.part,    {...s, font:{...font, bold:true}});
+    set(r, 2, row.desc,    {...s, font});
+    setN(r, 3, row.qty,    {...sR, font});
+    if (up > 0) setC(r, 4, up,  {...sR, font});
+    else        set(r, 4, "—",  {...sR, font:{...font, color:{rgb:"444444"}}});
+    if (tot > 0) setC(r, 5, tot, {...sR, font});
+    else         set(r, 5, "—", {...sR, font:{...font, color:{rgb:"444444"}}});
+
+    r++;
+  });
+
+  // ── TOTAL ROW ──
+  const totS = { font:TOTAL_FONT, fill:TOTAL_FILL, border:BORDER, alignment:{vertical:"center"} };
+  set(r,  0, "TOTAL",           totS);
+  set(r,  1, "",                totS);
+  set(r,  2, "",                totS);
+  set(r,  3, bom.reduce((s,x)=>s+x.qty,0), {...totS, alignment:{vertical:"center",horizontal:"right"}});
+  ws[XLSX.utils.encode_cell({r,c:3})].z = "#,##0";
+  set(r,  4, "",                totS);
+  setC(r, 5, price,             {...totS, alignment:{vertical:"center",horizontal:"right"}});
+
+  r++;
+
+  // Column widths
+  ws["!cols"] = [
+    {wch:16},{wch:28},{wch:58},{wch:14},{wch:18},{wch:18}
+  ];
+
+  // Row heights
+  ws["!rows"] = Array.from({length:r}, (_,i) => i===0 ? {hpt:24} : {hpt:18});
+
+  ws["!ref"] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:r-1,c:5}});
+  XLSX.utils.book_append_sheet(wb, ws, p.name.slice(0,31));
+}
+
+function buildConsolidatedSheet(wb, projects) {
+  // Aggregate all BoM items across all projects
+  const agg = {};
+  projects.forEach(p => {
+    const bom = calcBom(p);
+    bom.forEach(row => {
+      if (!agg[row.part]) agg[row.part] = { ...row, qty:0, projects:[] };
+      agg[row.part].qty += row.qty;
+      if (!agg[row.part].projects.includes(p.name)) agg[row.part].projects.push(p.name);
+    });
+  });
+
+  const ws = {};
+  let r = 0;
+  const set = (row,col,v,s={}) => {
+    ws[XLSX.utils.encode_cell({r:row,c:col})] = {v, t:typeof v==="number"?"n":"s", s:{font:BODY_FONT,border:BORDER,alignment:{vertical:"center"},...s}};
+  };
+  const setC = (row,col,v,s={}) => {
+    ws[XLSX.utils.encode_cell({r:row,c:col})] = {v, t:"n", s:{font:BODY_FONT,border:BORDER,alignment:{vertical:"center",horizontal:"right"},...s}, z:'"$"#,##0.00'};
+  };
+
+  // Title
+  set(r,0,"FiberSense — Consolidated BoM (All Projects)",{font:{...TITLE_FONT},fill:{patternType:"solid",fgColor:{rgb:"000000"}},alignment:{horizontal:"left"}});
+  if(!ws["!merges"]) ws["!merges"]=[];
+  ws["!merges"].push({s:{r:0,c:0},e:{r:0,c:5}});
+  r++;
+
+  // Summary row
+  set(r,0,`Projects: ${projects.length}  |  Total Boxes: ${projects.reduce((s,p)=>s+p.boxes,0)}  |  Total Firewalls: ${projects.reduce((s,p)=>s+Math.ceil(p.boxes/6),0)}`,
+    {font:{...BODY_FONT,color:{rgb:"666666"}},fill:{patternType:"solid",fgColor:{rgb:"111111"}}});
+  ws["!merges"].push({s:{r:1,c:0},e:{r:1,c:5}});
+  r+=2;
+
+  // Header
+  ["Type","Part","Description","Total Qty","Unit Price","Total Value"].forEach((h,i) =>
+    set(r,i,h,{font:HEADER_FONT,fill:HEADER_FILL,border:BORDER,alignment:{horizontal:"center",vertical:"center"}})
+  );
+  r++;
+
+  // Rows sorted by type order then qty desc
+  const TYPE_ORDER_XLSX = ["Sensing Unit","MIU","Firewall","Firewall ⚠️","Power","Misc Items","FS-Core"];
+  const sorted = Object.values(agg).sort((a,b)=>{
+    const ta = TYPE_ORDER_XLSX.indexOf(a.type), tb = TYPE_ORDER_XLSX.indexOf(b.type);
+    if (ta !== tb) return ta - tb;
+    return b.qty - a.qty;
+  });
+
+  let lastType = "";
+  let grandTotal = 0;
+  sorted.forEach((row, idx) => {
+    const up  = PRICES[row.part.replace(/^\d+[a-z]?_/,"")] || PRICES[row.part] || 0;
+    const tot = up * row.qty;
+    grandTotal += tot;
+    const fill = row.pending ? PENDING_FILL : (idx%2===0 ? {patternType:"solid",fgColor:{rgb:"111111"}} : {patternType:"solid",fgColor:{rgb:"161616"}});
+    const font = row.pending ? PENDING_FONT : BODY_FONT;
+    const s  = {fill,border:BORDER,alignment:{vertical:"center"}};
+    const sR = {fill,border:BORDER,alignment:{vertical:"center",horizontal:"right"}};
+
+    const typeLabel = row.type !== lastType ? row.type : "";
+    lastType = row.type;
+    set(r,0,typeLabel, {...s,font:{...font,bold:true}});
+    set(r,1,row.part,  {...s,font:{...font,bold:true}});
+    set(r,2,row.desc,  {...s,font});
+    ws[XLSX.utils.encode_cell({r,c:3})] = {v:row.qty,t:"n",s:{...sR,font},z:"#,##0"};
+    if (up>0) setC(r,4,up,{...sR,font});
+    else      set(r,4,"—",{...sR,font:{...font,color:{rgb:"444444"}}});
+    if (tot>0) setC(r,5,tot,{...sR,font});
+    else       set(r,5,"—",{...sR,font:{...font,color:{rgb:"444444"}}});
+    r++;
+  });
+
+  // Grand total
+  const totS = {font:TOTAL_FONT,fill:TOTAL_FILL,border:BORDER,alignment:{vertical:"center"}};
+  ["TOTAL","",""].forEach((v,i)=>set(r,i,v,totS));
+  ws[XLSX.utils.encode_cell({r,c:3})] = {v:sorted.reduce((s,x)=>s+x.qty,0),t:"n",s:{...totS,alignment:{vertical:"center",horizontal:"right"}},z:"#,##0"};
+  set(r,4,"",totS);
+  setC(r,5,grandTotal,{...totS,alignment:{vertical:"center",horizontal:"right"}});
+  r++;
+
+  ws["!cols"] = [{wch:16},{wch:22},{wch:52},{wch:14},{wch:18},{wch:18}];
+  ws["!rows"] = Array.from({length:r},(_,i)=>i===0?{hpt:24}:{hpt:18});
+  ws["!ref"]  = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:r-1,c:5}});
+  XLSX.utils.book_append_sheet(wb, ws, "Consolidated");
+}
+
+function exportXLSX(id) {
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  const wb = XLSX.utils.book_new();
+  buildProjectSheet(wb, p);
+  XLSX.writeFile(wb, `BOM_${p.name.replace(/[^a-zA-Z0-9]/g,"_")}.xlsx`);
+  toast("Excel exported ✓");
+}
+
+function exportAllXLSX() {
+  if (!projects.length) { toast("No projects to export"); return; }
+  const wb = XLSX.utils.book_new();
+  // One sheet per project
+  projects.forEach(p => buildProjectSheet(wb, p));
+  // Consolidated sheet last
+  buildConsolidatedSheet(wb, projects);
+  XLSX.writeFile(wb, "BOM_All_Projects.xlsx");
+  toast("Excel exported ✓");
+}
+
+function download(name, content) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content],{type:"text/csv"}));
+  a.download = name; a.click();
+}
+
+/* ══ TOAST ══ */
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"), 2000);
+}
+
+/* ══ LOGO ══ */
+(function injectLogo() {
+  const logoB64 = "data:image/png;base64,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";
+  if (logoB64 !== "data:image/png;base64,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") {
+    const el = document.getElementById("logo-mark");
+    el.innerHTML = `<img src="${logoB64}" style="width:100%;height:100%;object-fit:cover">`;
+    el.style.background = "#000";
+  }
+})();
+
+/* ══ BOM TOGGLE ══ */
+let bomOpenState = {};
+function toggleBom(id) {
+  bomOpenState[id] = !bomOpenState[id];
+  const tog = document.getElementById(`bom-tog-${id}`);
+  const col = document.getElementById(`bom-col-${id}`);
+  if (tog) tog.classList.toggle("open", bomOpenState[id]);
+  if (col) col.classList.toggle("open", bomOpenState[id]);
+}
+
+/* ══ PERSIST — SharePoint + localStorage fallback ══ */
+const STORAGE_KEY = "bw_bom_projects_v2"; // v2: clean start
+
+// ── Local cache (instant UI) ──
+function saveLocal() {
+  try {
+    const savedOnly = projects.filter(p => p.saved);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedOnly));
+  } catch(e) {}
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved) && saved.length) {
+        projects = saved.map(p=>({...p, saved:true}));
+        nextId = Math.max(...projects.map(p=>p.id)) + 1;
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+// ── SharePoint sync ──
+async function saveToSharePoint(p) {
+  if (!USE_SHAREPOINT) return;
+  try {
+    // no-cors: fire-and-forget — bypasses CORS preflight for save
+    fetch(SP_SAVE_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        id:   String(p.id),
+        name: p.name,
+        data: JSON.stringify(p)
+      })
+    });
+    showSyncStatus("✓ Saved to SharePoint", "ok");
+  } catch(e) {
+    console.warn("SP save failed:", e);
+    showSyncStatus("⚠️ SharePoint sync failed — saved locally", "warn");
+  }
+}
+
+async function loadFromSharePoint() {
+  if (!USE_SHAREPOINT) return false;
+  try {
+    showSyncStatus("⟳ Syncing with SharePoint…", "info");
+    // Use cors mode with explicit headers — requires CORS headers in the PA Response step
+    const res = await fetch(SP_READ_URL, {
+      method: "GET",
+      headers: {"Accept":"application/json"}
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    let items;
+    try { items = JSON.parse(text); } catch(e) { throw new Error("Invalid JSON from SharePoint"); }
+    if (!Array.isArray(items) || !items.length) {
+      showSyncStatus("✓ SharePoint connected — no projects yet", "ok");
+      return false;
+    }
+    const loaded = items
+      .filter(i => i.ProjectData)
+      .map(i => { try { return JSON.parse(i.ProjectData); } catch(e) { return null; } })
+      .filter(Boolean);
+    if (!loaded.length) return false;
+    projects = loaded;
+    nextId = Math.max(...projects.map(p=>p.id)) + 1;
+    saveLocal();
+    showSyncStatus("✓ Synced — " + projects.length + " projects loaded", "ok");
+    return true;
+  } catch(e) {
+    console.warn("SP load failed:", e.message);
+    // Show actionable message
+    if (e.message.includes("fetch")) {
+      showSyncStatus("⚠️ CORS error — add headers to Power Automate Response step", "warn");
+    } else {
+      showSyncStatus("⚠️ SharePoint offline — using local cache", "warn");
+    }
+    return false;
+  }
+}
+
+function showSyncStatus(msg, type) {
+  let el = document.getElementById("sync-status");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = type==="ok"?"var(--green)":type==="warn"?"var(--yellow)":"var(--blue)";
+  if (type === "ok") setTimeout(()=>{ if(el) el.textContent = ""; }, 3000);
+}
+
+function saveProjects() {
+  saveLocal();
+  // Save all projects to SP (update each modified one)
+  projects.forEach(p => saveToSharePoint(p));
+}
+
+async function loadProjects() {
+  // First show local cache instantly
+  const hasLocal = loadLocal();
+  if (hasLocal) {
+    renderList();
+    selectProject(projects[0].id);
+  }
+  // Then sync from SharePoint in background
+  const spLoaded = await loadFromSharePoint();
+  if (spLoaded) {
+    renderList();
+    if (projects.length) selectProject(projects[0].id);
+  }
+  return hasLocal || spLoaded;
+}
+
+// Auto-save after every field change
+const origUpdateField = updateField;
+updateField = function(id, field, value) {
+  origUpdateField(id, field, value);
+  saveLocal();
+  // Debounce SP save to avoid too many calls while typing
+  clearTimeout(window._spSaveTimer);
+  window._spSaveTimer = setTimeout(() => {
+    const p = projects.find(x=>x.id===id);
+    if (p) saveToSharePoint(p);
+  }, 1500);
+};
+
+/* ══ INIT — load demo projects ══ */
+loadProjects().then(loaded => {
+  if (!loaded) {
+    renderList();
+    document.getElementById("empty-state").style.display = "";
+    document.getElementById("form-area").style.display = "none";
+  }
+});
+</script>
+</body>
+</html>

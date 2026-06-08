@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BW Digital — Inventory Dashboard 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;--bg-card:#111;--bg-card2:#161616;
+  --border:#252525;--border-light:#1c1c1c;
+  --text:#eee;--text-muted:#666;--text-dim:#333;
+  --green:#a8d8b0;--yellow:#f5e6a3;--red:#f4a8a8;
+  --blue:#a8c8f0;--purple:#c8a8e0;--orange:#f5c8a0;
+  --green-dim:#1a2e1d;--yellow-dim:#2e2a10;--red-dim:#2e1515;
+  --blue-dim:#122030;--purple-dim:#201525;--orange-dim:#2a1e0e;
+  --radius:12px;--gap:16px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13.5px}
+.shell{max-width:1500px;margin:0 auto;padding:28px 32px 56px;display:flex;flex-direction:column;gap:20px}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.logo-area{display:flex;align-items:center;gap:14px}
+.logo-mark{width:42px;height:42px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:21px;color:#000;flex-shrink:0}
+.title-block h1{font-family:'Bebas Neue',sans-serif;font-size:25px;letter-spacing:2px;color:#fff;line-height:1}
+.title-block p{color:var(--text-muted);font-size:11.5px;margin-top:3px}
+.header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.last-update{color:var(--text-muted);font-size:11.5px;text-align:right}
+.last-update strong{color:var(--text);display:block;font-size:13px}
+.btn-upload{display:flex;align-items:center;gap:7px;background:#fff;color:#000;border:none;padding:9px 17px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-upload:hover{opacity:.85}
+.btn-upload svg{width:14px;height:14px}
+#file-input{display:none}
+
+/* VIEW SWITCHER */
+.view-switcher{display:flex;gap:4px;background:#0d0d0d;border:1px solid var(--border);border-radius:10px;padding:4px}
+.view-btn{display:flex;align-items:center;gap:7px;padding:8px 18px;border-radius:7px;border:none;background:transparent;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap}
+.view-btn:hover{color:var(--text);background:#1a1a1a}
+.view-btn.active{background:#fff;color:#000}
+.view-btn .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-forecast{background:var(--blue)}
+.dot-closed{background:var(--green)}
+.dot-all{background:var(--purple)}
+
+/* VIEW LABEL */
+.view-label{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:600}
+.vl-forecast{background:var(--blue-dim);color:var(--blue)}
+.vl-closed{background:var(--green-dim);color:var(--green)}
+.vl-all{background:var(--purple-dim);color:var(--purple)}
+
+/* BANNER */
+.banner{background:var(--yellow-dim);border:1px solid #5a4e18;border-radius:var(--radius);padding:11px 16px;font-size:12px;color:var(--yellow);display:flex;align-items:flex-start;gap:10px;line-height:1.5}
+.banner svg{flex-shrink:0;margin-top:1px}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--gap)}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+.kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:opacity .2s}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
+.kpi.green::after{background:var(--green)}.kpi.yellow::after{background:var(--yellow)}.kpi.red::after{background:var(--red)}
+.kpi.blue::after{background:var(--blue)}.kpi.purple::after{background:var(--purple)}.kpi.orange::after{background:var(--orange)}
+.kpi-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:15px}
+.kpi.green .kpi-icon{background:var(--green-dim);color:var(--green)}.kpi.yellow .kpi-icon{background:var(--yellow-dim);color:var(--yellow)}
+.kpi.red .kpi-icon{background:var(--red-dim);color:var(--red)}.kpi.blue .kpi-icon{background:var(--blue-dim);color:var(--blue)}
+.kpi.purple .kpi-icon{background:var(--purple-dim);color:var(--purple)}.kpi.orange .kpi-icon{background:var(--orange-dim);color:var(--orange)}
+.kpi-label{font-size:10.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.kpi-value{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:1px;color:#fff;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:3px}
+
+/* LAYOUT */
+.row3{display:grid;grid-template-columns:3fr 1fr;gap:var(--gap)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+@media(max-width:960px){.row3,.row2{grid-template-columns:1fr}}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;overflow:hidden}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.card-title span{color:var(--text);font-size:12px;font-weight:400;text-transform:none;letter-spacing:0}
+
+/* BoM TABLE */
+.bom-table-wrap{overflow-x:auto}
+table.bom{width:100%;border-collapse:collapse;font-size:12px}
+table.bom thead th{padding:7px 10px;text-align:left;color:var(--text-muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+table.bom thead th:hover{color:#fff}
+table.bom thead th.sorted{color:#fff}
+table.bom tbody tr{border-bottom:1px solid var(--border-light);transition:background .1s}
+table.bom tbody tr:last-child{border-bottom:none}
+table.bom tbody tr:hover{background:rgba(255,255,255,.025)}
+table.bom tbody td{padding:8px 10px;vertical-align:middle}
+
+/* TYPE CHIP */
+.type-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.chip-sensing{background:var(--blue-dim);color:var(--blue)}
+.chip-miu{background:var(--orange-dim);color:var(--orange)}
+.chip-firewall{background:var(--yellow-dim);color:var(--yellow)}
+.chip-power{background:var(--green-dim);color:var(--green)}
+.chip-misc{background:#1e1e1e;color:#777}
+.chip-fscore{background:var(--purple-dim);color:var(--purple)}
+
+/* PART+DESC cell */
+.part-cell .part-name{font-weight:600;color:#fff;margin-bottom:2px}
+.part-cell .part-desc{font-size:11px;color:var(--text-muted);line-height:1.4}
+.qty-big{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5px;text-align:right}
+
+/* BADGE */
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.badge-p1{background:var(--red-dim);color:var(--red)}.badge-p2{background:var(--yellow-dim);color:var(--yellow)}
+.badge-p0{background:var(--green-dim);color:var(--green)}.badge-forecast{background:var(--blue-dim);color:var(--blue)}
+.badge-closed{background:var(--green-dim);color:var(--green)}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:10px}
+.tl-row{display:flex;gap:8px;align-items:flex-start}
+.tl-q{width:36px;font-size:11px;font-weight:700;flex-shrink:0;padding-top:5px}
+.tl-bars{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.tl-box{height:26px;border-radius:5px;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:600;white-space:nowrap}
+
+/* UNKNOWNS */
+.unknown-grid{display:flex;flex-direction:column;gap:8px}
+.unknown-item{background:var(--bg-card2);border:1px solid var(--border-light);border-left:3px solid var(--yellow);border-radius:8px;padding:11px 13px}
+.unknown-item .u-label{font-size:11px;font-weight:700;color:var(--yellow);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.unknown-item .u-note{font-size:11.5px;color:var(--text-muted);line-height:1.5}
+
+/* CHART */
+.chart-wrap{position:relative;height:200px}
+
+/* PROJECTS TABLE */
+table.proj{width:100%;border-collapse:collapse;font-size:12px}
+table.proj thead th{padding:7px 10px;text-align:left;color:var(--text-muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+table.proj thead th:hover{color:#fff}
+table.proj thead th.sorted{color:#fff}
+table.proj tbody tr{border-bottom:1px solid var(--border-light)}
+table.proj tbody tr:last-child{border-bottom:none}
+table.proj tbody tr:hover{background:rgba(255,255,255,.025)}
+table.proj tbody td{padding:9px 10px;vertical-align:middle}
+
+footer{text-align:center;color:var(--text-dim);font-size:11px;padding-top:12px;border-top:1px solid var(--border)}
+select.flt{background:#1a1a1a;border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:12px;font-family:inherit}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<header>
+  <div class="logo-area">
+    <div class="logo-mark" style="background:#000;padding:0;overflow:hidden"><img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABMAD4DASIAAhEBAxEB/8QAHAAAAQQDAQAAAAAAAAAAAAAACAABAgUEBgcD/8QAMhAAAQIFAgQFAwMFAQAAAAAAAQIDAAQFBhEHIQgSUWETIjEyQRRxgVKCoRUjJEJikf/EABgBAQEBAQEAAAAAAAAAAAAAAAABAgME/8QAHhEBAQACAgIDAAAAAAAAAAAAAQACESExEkEDIlH/2gAMAwEAAhEDEQA/ABQKu0RKj84iBV0IMRKupj2XDc6iPWIZHWJMNOzMw3LyzLjzzqghtttBUpajsAANye0djs3hg1euSVRNKosvRGHAChVVfDKiO7aQpaf3JERQ7mluMlXeGKgfkGCDqnB9qzKSxdl5i2qisDIalp5aVHt/cbSP5jjV7WVddk1EU+6qDO0l855PHb8jmPUoWMpWO6SYCPuIlQ5x8wt+phs9DCi0vQZ+YyKXITtVqctTKbLuTU5NvJYYZbGVOLUQEpHckxj4ghuB6h043lcF/VdAVJWlS1zW49ri0r834bQ7+SD8RMnRuobbb3nLO4WLXlUCSk7j1SqMv4i1ueZqQSrbb5Sj1G2FLwclIwAPd96r6h3rOOP3BddSfbWTiVaeLMugdA2jCfyQT1Jiovq5aleN31O5qu4XJyozCnl75CAfagf8pThI7ARSEdBExx1yxbOo9wXBRZkTVHrdSpz6TkOSs0tpQP3SRBB6XcQzNwyQsPXGTlrht6cIaFSdaAflVegWspxkD9acLT65VA2EQ2MfMVBg6uocRuks1pbdjTcpMKn7cqaC/SZ7IPOjbKFEbFScjcbEEEepA5aQYKWwpg6pcHF0WzUVfUVSxyJ2QdVutDCUqWlPX2JfQO3L0gXcRMX0xKe+O8FVwT/0eb0s1Xp1YDv0i5Fv63wRlz6dTMwFFI+SAFY74gUwe5jtXBzfUnZ+rKJCsOITRrgYNNmi57EqUQW1K7c3lPwAsn4hnyTHuprm0RvSQqQaoTDFySb6fFk35B5CnJho+1YaJ5yMf7JCk52CjFbK6MarzLvht6eXGlWcZdkVtj/1QAjcNTDfOhF7VCzWnkT1rPuqmafJVSVROSUwwonBCHAQFj2qKcHI6ERiSmt1IcZCKxpZQHz8iQqE5JIP7EuED8RBy9V0XlJ8OWpQbD9wN0O1pbGfHrNXZZSB1ISVKH5EWEvpzoxb7qU3Xqy5cE0cYp9qyJeUs9Evqyg5+wjwZ1g09lll2W0GtlTpOeabnnpnJ7hY3ixlOJ27pFSZOzLHsq3vEIQ2inUkhwk7ADCsE9uWJ9pxd10aZtSl6V6iTdC00rtn01ukOKVO1la/GqLYYdOSlWwCd/b5fN1zAIZg09f75uy0uGaVoF81f6y97tz47KWm2/o5YkKWjlQAMBIS2c7lS1bnEBSVHpD4ztmUuYwubtEds+v8wo62YmdONYbL1AsmX0010bcU3LgIplwpz4rBxhPOrBKVDYc+CFDHONiTj3NwmXW4gVPT646HdlGe80u6iZS04ofG+7avuF79BA3ZHWLKhV+u0J1T1DrdSpbivcuTmlsk/lJEY8ddWt/t2WjcJ+sk9NBqbpVMpaCcF6aqLakgdcNFZ/iN/pVH0f4b81iuVli+b+ZH+LIy2PClHOpG4bI/Ws82N0pEDdVL/vyqyypaqXtcs8woYU3M1V9xJHTClERrcPFe2bDq2XUy+K/qFd83c1xzIdm3/KhtOQ2w2Pa2gfCRk/ckk5JJjWoY7wo11ZoE7+kTT7YYpEP6J2i1mOM7wxONhiGUokQ3xmEpc57QiSRn0/MRBOIUJLJ6mHz1Jhh6iEfUiFb/2Q==" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+    <div class="title-block">
+      <h1>Inventory Planning Dashboard</h1>
+      <p>2026 Deployment — Internal Use Confidential</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <!-- VIEW SWITCHER -->
+    <div class="view-switcher">
+      <button class="view-btn active" data-view="forecast">
+        <span class="dot dot-forecast"></span>Forecast
+      </button>
+      <button class="view-btn" data-view="closed">
+        <span class="dot dot-closed"></span>Closeds
+      </button>
+      <button class="view-btn" data-view="all">
+        <span class="dot dot-all"></span>Consolidated
+      </button>
+    </div>
+    <div class="last-update">
+      <strong id="last-update-date">27 May 2026</strong>
+      Last updated
+    </div>
+    <label class="btn-upload">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Update Forecast
+      <input type="file" id="file-input" accept=".xlsx,.xls">
+    </label>
+  </div>
+</header>
+
+<!-- BANNER -->
+<div class="banner">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  <span><strong>Assumptions:</strong> Single shared location &nbsp;·&nbsp; 1 Firewall max. 6 boxes &nbsp;·&nbsp; 1 PDU per Firewall &nbsp;·&nbsp; FS-Core & Misc Items: 1 kit per project &nbsp;·&nbsp; MIU ships with all 5 fiber patch variants (LC/UCP→SC/APC · SC/UPC · LC/UPC · LC/APC · MU/UPC) &nbsp;·&nbsp; IP Link & Firewall model <strong>⚠️ pending confirmation</strong></span>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi blue">
+    <div class="kpi-icon">📦</div>
+    <div class="kpi-label">Sensing Units</div>
+    <div class="kpi-value" id="kpi-boxes">—</div>
+    <div class="kpi-sub" id="kpi-boxes-sub"></div>
+  </div>
+  <div class="kpi purple">
+    <div class="kpi-icon">🔌</div>
+    <div class="kpi-label">Total Ports</div>
+    <div class="kpi-value" id="kpi-ports">—</div>
+    <div class="kpi-sub">Active ports</div>
+  </div>
+  <div class="kpi yellow">
+    <div class="kpi-icon">🔒</div>
+    <div class="kpi-label">Firewalls</div>
+    <div class="kpi-value" id="kpi-fw">—</div>
+    <div class="kpi-sub">⚠️ Type to confirm</div>
+  </div>
+  <div class="kpi green">
+    <div class="kpi-icon">⚡</div>
+    <div class="kpi-label">PDUs</div>
+    <div class="kpi-value" id="kpi-pdu">—</div>
+    <div class="kpi-sub">1 PDU / Firewall</div>
+  </div>
+  <div class="kpi orange">
+    <div class="kpi-icon">🌊</div>
+    <div class="kpi-label">MIUs</div>
+    <div class="kpi-value" id="kpi-miu">—</div>
+    <div class="kpi-sub">DigitalMarine only</div>
+  </div>
+  <div class="kpi red">
+    <div class="kpi-icon">📋</div>
+    <div class="kpi-label">Projects</div>
+    <div class="kpi-value" id="kpi-proj">—</div>
+    <div class="kpi-sub" id="kpi-proj-sub"></div>
+  </div>
+</div>
+
+<!-- BoM + CHART -->
+<div class="row3">
+  <div class="card">
+    <div class="card-title">
+      Consolidated BoM — Total Required per Component
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="bom-view-label"></span>
+        <span id="bom-subtitle" style="color:var(--text-muted);font-size:11.5px"></span>
+        <div style="display:flex;gap:3px;background:#0d0d0d;border:1px solid var(--border);border-radius:8px;padding:3px">
+          <button class="grp-btn active" data-grp="type" style="padding:5px 13px;border-radius:6px;border:none;background:#fff;color:#000;font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s">By Type</button>
+          <button class="grp-btn" data-grp="part" style="padding:5px 13px;border-radius:6px;border:none;background:transparent;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s">By Part</button>
+        </div>
+      </div>
+    </div>
+    <div class="bom-table-wrap">
+      <table class="bom">
+        <thead>
+          <tr>
+            <th data-col="type" style="width:130px" id="bom-th-type">Type</th>
+            <style id="bom-type-col-style"></style>
+            <th data-col="part">Part / Descripción</th>
+            <th data-col="qty" style="text-align:right;width:90px">Cant. Req.</th>
+            <th style="width:100px;text-align:center">Estado Inv.</th>
+          </tr>
+        </thead>
+        <tbody id="bom-tbody"></tbody>
+      </table>
+    </div>
+    <p style="font-size:11px;color:var(--text-dim);margin-top:10px">* Update with real inventory stock</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Product Mix</div>
+    <div class="chart-wrap"><canvas id="chart-products"></canvas></div>
+    <div style="margin-top:16px">
+      <div class="card-title" style="margin-bottom:10px">By Product</div>
+      <div id="product-breakdown"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE + UNKNOWNS -->
+<div class="row2">
+  <div class="card">
+    <div class="card-title">2026 Deployment Timeline</div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚠️ Data Pending Confirmation</div>
+    <div class="unknown-grid">
+      <div class="unknown-item">
+        <div class="u-label">⚠️ IP Link</div>
+        <div class="u-note">Unknown per project. Determines compatible Firewall type (FP-1010 Copper only; FP-1120/1220 Fiber or Copper).</div>
+      </div>
+      <div class="unknown-item">
+        <div class="u-label">⚠️ Firewall Model</div>
+        <div class="u-note">Depends on IP Link. Options: FP-1010 · FP-1120 · FP-1220. Affects required brackets, cables and optics.</div>
+      </div>
+      <div class="unknown-item" style="border-left-color:var(--green)">
+        <div class="u-label" style="color:var(--green)">✅ MIU Fiber Patch Cables</div>
+        <div class="u-note" style="color:var(--green)">All 5 variants shipped with every MIU: LC/UCP→SC/APC · LC/UCP→SC/UPC · LC/UCP→LC/UPC · LC/UCP→LC/APC · LC/UCP→MU/UPC. No confirmation required.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS TABLE -->
+<div class="card">
+  <div class="card-title">
+    Detalle de Projects
+    <select class="flt" id="filter-priority"><option value="all">All priorities</option><option value="P0">Closed</option><option value="P1">P1</option><option value="P2">P2</option></select>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="proj">
+      <thead>
+        <tr>
+          <th data-col="name">Proyecto</th>
+          <th data-col="status">Estado</th>
+          <th data-col="priority">Prioridad</th>
+          <th data-col="product">Producto</th>
+          <th data-col="unit">Sensing Unit</th>
+          <th data-col="boxes" style="text-align:right">Boxes</th>
+          <th data-col="ports" style="text-align:right">Ports</th>
+          <th data-col="firewalls" style="text-align:right">Firewalls ⚠️</th>
+          <th data-col="pdu" style="text-align:right">PDUs</th>
+          <th data-col="miu" style="text-align:right">MIU</th>
+          <th data-col="fsc" style="text-align:right">FS-Core</th>
+          <th data-col="location">Ubicación</th>
+          <th data-col="quarter">Quarter</th>
+        </tr>
+      </thead>
+      <tbody id="proj-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer><p>BW Digital &nbsp;·&nbsp; Confidential — Internal Use &nbsp;·&nbsp; <span id="footer-date"></span></p></footer>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   ALL PROJECT DATA
+   ══════════════════════════════════════ */
+const FORECAST_PROJECTS = [
+  {name:"BW Digital",   product:"DigitalMarine",priority:"P2",quarter:"Q3 2026",status:"Forecast",location:"AU",close_date:"26/06/2026",unit:"C-Band 1.0",boxes:1, ports:1, miu:1,pdu:1,fsc:1},
+  {name:"BW Digital",   product:"DigitalMarine",priority:"P2",quarter:"Q3 2026",status:"Forecast",location:"AU",close_date:"26/06/2026",unit:"C-Band 1.0",boxes:1, ports:1, miu:1,pdu:1,fsc:1},
+  {name:"Binnies",      product:"DigitalLeak",  priority:"P1",quarter:"Q4 2026",status:"Forecast",location:"UK",close_date:"31/08/2026",unit:"C-Band 1.0",boxes:4, ports:8, miu:0,pdu:1,fsc:1},
+  {name:"Duke Energy",  product:"DigitalAsset", priority:"P2",quarter:"Q3 2026",status:"Forecast",location:"US",close_date:"30/07/2026",unit:"C-Band 1.0",boxes:2, ports:2, miu:0,pdu:1,fsc:1},
+  {name:"Thames Water", product:"DigitalLeak",  priority:"P1",quarter:"Q4 2026",status:"Forecast",location:"UK",close_date:"30/09/2026",unit:"C-Band 1.0",boxes:20,ports:39,miu:0,pdu:4,fsc:1},
+];
+const CLOSED_PROJECTS = [
+  {name:"EXA",            product:"DigitalMarine",priority:"P0",quarter:"Q2 2026",status:"Closed",location:"UK",   close_date:"Q2 2026",unit:"L-Band 1.1 RE",boxes:2,ports:2, miu:2,pdu:1,fsc:1},
+  {name:"BEG",            product:"DigitalAsset", priority:"P0",quarter:"Q2 2026",status:"Closed",location:"DE/AU",close_date:"Q2 2026",unit:"L-Band 1.1",   boxes:1,ports:2, miu:0,pdu:1,fsc:1},
+  {name:"TW Ring Mains",  product:"DigitalLeak",  priority:"P0",quarter:"Q2 2026",status:"Closed",location:"UK",   close_date:"Q2 2026",unit:"C-Band 1.0",   boxes:2,ports:4, miu:0,pdu:1,fsc:1},
+  {name:"City of Houston",product:"DigitalAsset", priority:"P0",quarter:"Q3 2026",status:"Closed",location:"US",   close_date:"Q3 2026",unit:"C-Band 1.0",   boxes:6,ports:11,miu:0,pdu:1,fsc:1},
+];
+
+/* BoM per project — derived from actual BoM sheets */
+function buildBomForProjects(projects) {
+  const totals = {};
+  const add = (type, part, desc, qty, unknown) => {
+    const k = type+'||'+part;
+    if (!totals[k]) totals[k] = {type, part, desc, qty:0, unknown:!!unknown};
+    totals[k].qty += qty;
+  };
+
+  projects.forEach(p => {
+    const n   = p.boxes;
+    const isUS = p.location === "US";
+    const isMarine = p.product === "DigitalMarine";
+
+    // Sensing Unit
+    add("Sensing Unit","C-Band 1.0","2 Port Sensing Unit - C-Band 1.0", n);
+    add("Sensing Unit","Gen2- Rails","2 Port Sensing Unit - Rails", n);
+    add("Sensing Unit","Power Cable Blue", isUS?"C13 to NEMA 5-15P Blue – 6ft":"C13 to C14 - Blue – 6ft", n);
+    add("Sensing Unit","Power Cable Red",  isUS?"C13 to NEMA 5-15P Red – 6ft":"C13 to C14 - Red – 6ft",  n);
+    add("Sensing Unit","Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", p.ports);
+
+    // MIU — only DigitalMarine
+    if (isMarine) {
+      add("MIU","1_MIU","Marine Interface Unit", n);
+      add("MIU","DC Power","48V DC Power - 1 amp fuses (crimper and lugs included)", n*2);
+      add("MIU","Accessories","Amazon Crimper and Ring Terminals (red, blue, yellow)", n);
+      add("MIU","Fiber Patch — LC/UCP to SC/APC","LC/UCP to SC/APC 10m — Most common", n);
+      add("MIU","Fiber Patch — LC/UCP to SC/UPC","LC/UCP to SC/UPC 10m", n);
+      add("MIU","Fiber Patch — LC/UCP to LC/UPC","LC/UCP to LC/UPC 10m", n);
+      add("MIU","Fiber Patch — LC/UCP to LC/APC","LC/UCP to LC/APC 10m", n);
+      add("MIU","Fiber Patch — LC/UCP to MU/UPC","LC/UCP to MU/UPC 10m", n);
+    }
+
+    // Firewall — qty = ceil(boxes/6); one physical unit per 6 boxes max
+    const fwCount = Math.ceil(p.boxes / 6);
+    const fwPwr   = isUS ? "C13 to NEMA 5-15P Black – 6ft" : "C13 to C20 - Black – 6ft";
+    add("Firewall ⚠️","1_Firewall Unit","FP-1010 / FP-1120 / FP-1220 — model depends on IP Link (pending confirmation)", fwCount, true);
+    add("Firewall ⚠️","2_Cisco 1gb Optic","CISCO 1000BASE-LX/LH SFP transceiver, MMF/SMF, 1310nm — 1 per Firewall", fwCount, true);
+    add("Firewall","3_Power Cable", fwPwr, fwCount);
+    add("Firewall","4_Cisco Console Cable","Console Cable - USB to RJ45, 6ft.", fwCount);
+
+    // Power / PDU — PDU units always first; US uses PDUMH15ATNETOEM, Global uses PDUMH20HVATNET
+    // Power Cable key is unique per connector type so AU/UK/US lines stay separate in the table
+    if (isUS) {
+      add("Power","1_PDUMH15ATNETOEM","Tripplite PDU Switched ATS 120V 15A 5-15R 8 Outlet 2 5-15P Horizontal", p.pdu);
+      add("Power","3_Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", p.pdu);
+      add("Power","4_Power Cable — A,B to C20","A, B, to C20 (United States)", p.pdu*2);
+    } else if (p.location === "AU") {
+      add("Power","2_PDUMH20HVATNET","Eaton Tripp Lite 3.8kW Switched ATS PDU — 8×C13 + 2×C19, 1U", p.pdu);
+      add("Power","3_Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", p.pdu);
+      add("Power","4_Power Cable — I to C19","I, to C19 (Australia)", p.pdu*2);
+    } else {
+      add("Power","2_PDUMH20HVATNET","Eaton Tripp Lite 3.8kW Switched ATS PDU — 8×C13 + 2×C19, 1U", p.pdu);
+      add("Power","3_Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", p.pdu);
+      add("Power","4_Power Cable — G to C19","G, to C19 (United Kingdom / Global)", p.pdu*2);
+    }
+
+    // Misc Items — 1 kit per project/site
+    add("Misc Items","Screws/Nuts","M6 Cage nuts/screw (50 Pack)", 1);
+    add("Misc Items","Velcro","5m Velcro", 1);
+    add("Misc Items","LC Cleaner","NEOCLEAN-E LC/MU 1.25mm Pen One-Push Cleaner", 1);
+    add("Misc Items","SC Cleaner","NEOCLEAN-E SC/FC/ST/LSH 2.5mm Pen One-Push Cleaner", 1);
+
+    // FS-Core — 1 kit per project/site
+    const fscPwr = isUS ? "C13 to NEMA 5-15P Black – 6ft" : "C13 to C14 - Black – 6ft";
+    add("FS-Core","1_FS-CORE","FS Core", 1);
+    add("FS-Core","2_POE-Power Injector","POE-Power Injector with C13", 1);
+    add("FS-Core","3_Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", 2);
+    add("FS-Core","4_Pouch","Pouch", 1);
+    add("FS-Core","5_Power Cable", fscPwr, 1);
+  });
+
+  return Object.values(totals);
+}
+
+/* ══════════════════════════════════════
+   STATE
+   ══════════════════════════════════════ */
+let activeView    = "forecast";
+let bomGroupBy    = "type";
+// "type" | "part" // "forecast" | "closed" | "all"
+let filterPriority = "all";
+let sortProjState  = {col:null, dir:1};
+let sortBomState   = {col:null, dir:1};
+let uploadDate     = "27 May 2026";
+let productChart   = null;
+let forecastProjects = [...FORECAST_PROJECTS];
+
+function getViewProjects() {
+  const base = [...forecastProjects, ...CLOSED_PROJECTS];
+  if (activeView === "forecast") return forecastProjects;
+  if (activeView === "closed")   return CLOSED_PROJECTS;
+  return base;
+}
+
+/* ══════════════════════════════════════
+   VIEW SWITCHER
+   ══════════════════════════════════════ */
+document.querySelectorAll(".view-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    activeView = btn.dataset.view;
+    document.querySelectorAll(".view-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    renderAll();
+  });
+});
+
+/* ══════════════════════════════════════
+   RENDER ALL
+   ══════════════════════════════════════ */
+function renderAll() {
+  const projects = getViewProjects();
+  renderKPIs(projects);
+  renderBoM(projects);
+  renderChart(projects);
+  renderTimeline(projects);
+  renderProjTable();
+  document.getElementById("last-update-date").textContent = uploadDate;
+  document.getElementById("footer-date").textContent = "Data as of " + uploadDate;
+}
+
+/* ── KPIs ── */
+function renderKPIs(projects) {
+  const totalBoxes = projects.reduce((s,p)=>s+p.boxes,0);
+  const totalPorts = projects.reduce((s,p)=>s+p.ports,0);
+  const totalMiu   = projects.reduce((s,p)=>s+p.miu,0);
+  const totalPdu   = projects.reduce((s,p)=>s+p.pdu,0);
+  const totalFw    = projects.reduce((s,p)=>s+Math.ceil(p.boxes/6),0);
+  const fc = projects.filter(p=>p.status==="Forecast").length;
+  const cl = projects.filter(p=>p.status==="Closed").length;
+
+  document.getElementById("kpi-boxes").textContent    = totalBoxes;
+  document.getElementById("kpi-ports").textContent    = totalPorts;
+  document.getElementById("kpi-fw").textContent       = totalFw;
+  document.getElementById("kpi-pdu").textContent      = totalPdu;
+  document.getElementById("kpi-miu").textContent      = totalMiu;
+  document.getElementById("kpi-proj").textContent     = projects.length;
+
+  const subMap = {
+    forecast: `${projects.length} Forecast projects`,
+    closed:   `${projects.length} closed contracts`,
+    all:      `${fc} Forecast + ${cl} Closed`
+  };
+  document.getElementById("kpi-boxes-sub").textContent = subMap[activeView];
+  document.getElementById("kpi-proj-sub").textContent  =
+    activeView==="all" ? `${fc} Forecast · ${cl} Closed` :
+    activeView==="forecast" ? "Active pipeline" : "Delivered / in progress";
+}
+
+/* ── BoM ── */
+const TYPE_ORDER = ["Sensing Unit","MIU","Firewall ⚠️","Firewall","Power","Misc Items","FS-Core"];
+function typeChipClass(t) {
+  return {
+    "Sensing Unit":"chip-sensing","MIU":"chip-miu",
+    "Firewall ⚠️":"chip-firewall","Firewall":"chip-firewall",
+    "Power":"chip-power","Misc Items":"chip-misc","FS-Core":"chip-fscore"
+  }[t] || "chip-misc";
+}
+
+function renderBoM(projects) {
+  let rawData = buildBomForProjects(projects);
+
+  // label
+  const labelMap = {forecast:"vl-forecast", closed:"vl-closed", all:"vl-all"};
+  const labelTxt = {forecast:"Forecast", closed:"Closed", all:"Consolidated"};
+  document.getElementById("bom-view-label").innerHTML =
+    `<span class="view-label ${labelMap[activeView]}">${labelTxt[activeView]}</span>`;
+  document.getElementById("bom-subtitle").textContent = `${projects.length} project${projects.length!==1?'s':''}`;
+
+  let data;
+
+  if (bomGroupBy === "part") {
+    // Collapse by cleaned part name — sum qtys across all types
+    const byPart = {};
+    rawData.forEach(r => {
+      const cleanPart = r.part.replace(/^\d+_/, "");
+      if (!byPart[cleanPart]) {
+        byPart[cleanPart] = { type: r.type, part: cleanPart, desc: r.desc, qty: 0, unknown: false };
+      }
+      byPart[cleanPart].qty += r.qty;
+      if (r.unknown) byPart[cleanPart].unknown = true;
+      if (byPart[cleanPart].type !== r.type) byPart[cleanPart].type = "Multiple";
+    });
+    data = Object.values(byPart).sort((a,b) => b.qty - a.qty);
+  } else {
+    data = rawData;
+    if (sortBomState.col) {
+      data.sort((a,b)=>{
+        const va=a[sortBomState.col], vb=b[sortBomState.col];
+        if (typeof va==="number") return (va-vb)*sortBomState.dir;
+        return String(va||"").localeCompare(String(vb||""))*sortBomState.dir;
+      });
+    } else {
+      data.sort((a,b)=>{
+        const td = TYPE_ORDER.indexOf(a.type)-TYPE_ORDER.indexOf(b.type);
+        if (td !== 0) return td;
+        return (a.part||"").localeCompare(b.part||"");
+      });
+    }
+  }
+
+  const tbody = document.getElementById("bom-tbody");
+  tbody.innerHTML = data.map(r => {
+    const chip = r.type === "Multiple" ? "chip-misc" : typeChipClass(r.type);
+    const unknownStyle = r.unknown
+      ? `background:var(--yellow-dim);color:var(--yellow)`
+      : `background:#1a1a1a;color:var(--text-dim)`;
+    const unknownTxt = r.unknown ? "⚠️ Pending" : "Verify";
+    const typeLabel = bomGroupBy === "part" && r.type === "Multiple"
+      ? `<span class="type-chip chip-misc" style="font-size:10px;opacity:.65">Multiple</span>`
+      : `<span class="type-chip ${chip}">${r.type}</span>`;
+    return `
+      <tr>
+        <td class="bom-type-col">${typeLabel}</td>
+        <td><div class="part-cell"><div class="part-name">${r.part.replace(/^\d+_/,"")}</div><div class="part-desc">${r.desc}</div></div></td>
+        <td class="qty-big" style="color:${r.unknown?'var(--yellow)':'#fff'}">${r.qty}</td>
+        <td style="text-align:center"><span style="display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;${unknownStyle}">${unknownTxt}</span></td>
+      </tr>`;
+  }).join('');
+}
+
+/* ── CHART ── */
+const PROD_COLORS = {DigitalMarine:"#f5c8a0",DigitalLeak:"#a8c8f0",DigitalAsset:"#c8a8e0"};
+function renderChart(projects) {
+  const prodBoxes = {}, prodCount = {};
+  projects.forEach(p=>{
+    prodBoxes[p.product]=(prodBoxes[p.product]||0)+p.boxes;
+    prodCount[p.product]=(prodCount[p.product]||0)+1;
+  });
+  const labels=Object.keys(prodBoxes), vals=labels.map(l=>prodBoxes[l]), colors=labels.map(l=>PROD_COLORS[l]||"#888");
+
+  if (productChart) productChart.destroy();
+  productChart = new Chart(document.getElementById("chart-products").getContext("2d"),{
+    type:"doughnut",
+    data:{labels,datasets:[{data:vals,backgroundColor:colors,borderColor:"#111",borderWidth:3,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"65%",
+      plugins:{
+        legend:{position:"bottom",labels:{color:"#888",font:{size:11,family:"'DM Sans'"},padding:12,boxWidth:10,boxHeight:10}},
+        tooltip:{backgroundColor:"#222",titleColor:"#fff",bodyColor:"#999",callbacks:{label:c=>` ${c.label}: ${c.raw} boxes`}}
+      }
+    }
+  });
+
+  document.getElementById("product-breakdown").innerHTML = labels.map(l=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-light)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${PROD_COLORS[l]||'#888'};flex-shrink:0;display:inline-block"></span>
+        <span style="font-size:12px">${l}</span>
+      </div>
+      <div style="text-align:right">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff">${prodBoxes[l]}</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:4px">boxes · ${prodCount[l]} proj</span>
+      </div>
+    </div>`).join('');
+}
+
+/* ── TIMELINE ── */
+function renderTimeline(projects) {
+  const quarters = ["Q1 2026","Q2 2026","Q3 2026","Q4 2026"];
+  const qColors  = {"Q1 2026":"#a8d8b0","Q2 2026":"#a8c8f0","Q3 2026":"#f5c8a0","Q4 2026":"#f4a8a8"};
+  document.getElementById("timeline").innerHTML = quarters.map(q=>{
+    const qp = projects.filter(p=>p.quarter===q);
+    if (!qp.length) return `
+      <div class="tl-row">
+        <div class="tl-q" style="color:var(--text-dim)">${q.slice(0,2)}</div>
+        <div style="font-size:11px;color:var(--text-dim);padding:5px 0">No projects in this view</div>
+      </div>`;
+    const total = qp.reduce((s,p)=>s+p.boxes,0);
+    return `
+      <div class="tl-row">
+        <div class="tl-q" style="color:${qColors[q]}">${q.slice(0,2)}</div>
+        <div class="tl-bars">
+          ${qp.map(p=>`
+            <div class="tl-box"
+              style="background:${qColors[q]}22;color:${qColors[q]};border:1px solid ${qColors[q]}44;min-width:${Math.max(70,p.boxes*6)}px"
+              title="${p.name} | ${p.product} | ${p.boxes} boxes · ${p.ports} ports · ${p.status}">
+              ${p.name}&nbsp;<strong>${p.boxes}b</strong>
+            </div>`).join('')}
+          <div style="margin-left:auto;font-size:11px;color:var(--text-muted);padding:5px 4px;white-space:nowrap">
+            <strong style="color:#fff">${total}</strong> boxes
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── PROJECTS TABLE ── */
+function renderProjTable() {
+  const allProjects = [...forecastProjects, ...CLOSED_PROJECTS];
+  let data = allProjects.filter(p=>{
+    if (activeView==="forecast" && p.status!=="Forecast") return false;
+    if (activeView==="closed"   && p.status!=="Closed")   return false;
+    if (filterPriority!=="all"  && p.priority!==filterPriority) return false;
+    return true;
+  });
+  if (sortProjState.col) {
+    data.sort((a,b)=>{
+      const va=a[sortProjState.col], vb=b[sortProjState.col];
+      if (typeof va==="number") return (va-vb)*sortProjState.dir;
+      return String(va||"").localeCompare(String(vb||""))*sortProjState.dir;
+    });
+  }
+  document.getElementById("proj-tbody").innerHTML = data.map(p=>{
+    const fw = Math.ceil(p.boxes/6);
+    const priClass = p.priority==="P0"?"badge-p0":p.priority==="P1"?"badge-p1":"badge-p2";
+    const stClass  = p.status==="Closed"?"badge-closed":"badge-forecast";
+    const priLabel = p.priority==="P0"?"Closed":p.priority;
+    return `
+      <tr>
+        <td style="font-weight:600">${p.name}</td>
+        <td><span class="badge ${stClass}">${p.status}</span></td>
+        <td><span class="badge ${priClass}">${priLabel}</span></td>
+        <td><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${PROD_COLORS[p.product]||'#888'};margin-right:5px;vertical-align:middle"></span>${p.product}</td>
+        <td style="color:var(--text-muted)">${p.unit}</td>
+        <td style="text-align:right;font-family:'Bebas Neue',sans-serif;font-size:18px">${p.boxes}</td>
+        <td style="text-align:right">${p.ports}</td>
+        <td style="text-align:right;color:var(--yellow)">${fw} ⚠️</td>
+        <td style="text-align:right">${p.pdu}</td>
+        <td style="text-align:right;color:${p.miu>0?"var(--orange)":"var(--text-dim)"}">${p.miu||"—"}</td>
+        <td style="text-align:right;color:var(--purple)">${p.fsc}</td>
+        <td>${p.location}</td>
+        <td style="color:var(--text-muted)">${p.quarter}</td>
+      </tr>`;
+  }).join('');
+}
+
+/* ══ SORT BoM ══ */
+document.querySelectorAll("table.bom thead th[data-col]").forEach(th=>{
+  th.addEventListener("click",()=>{
+    const col=th.getAttribute("data-col");
+    if(sortBomState.col===col) sortBomState.dir*=-1; else{sortBomState.col=col;sortBomState.dir=1;}
+    document.querySelectorAll("table.bom thead th").forEach(t=>{t.classList.remove("sorted");t.textContent=t.textContent.replace(/[▲▼]\s*/g,'');});
+    th.classList.add("sorted"); th.textContent=th.textContent+" "+(sortBomState.dir===1?"▲":"▼");
+    renderBoM(getViewProjects());
+  });
+});
+
+/* ══ GROUP BY toggle ══ */
+document.querySelectorAll(".grp-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    bomGroupBy = btn.dataset.grp;
+    document.querySelectorAll(".grp-btn").forEach(b => {
+      b.style.background = "transparent";
+      b.style.color = "var(--text-muted)";
+    });
+    btn.style.background = "#fff";
+    btn.style.color = "#000";
+    // Update table header
+    const thType = document.getElementById("bom-th-type");
+    if (thType) thType.textContent = bomGroupBy === "type" ? "Type" : "Part";
+    renderBoM(getViewProjects());
+  });
+});
+
+/* ══ SORT Projects ══ */
+document.querySelectorAll("table.proj thead th[data-col]").forEach(th=>{
+  th.addEventListener("click",()=>{
+    const col=th.getAttribute("data-col");
+    if(sortProjState.col===col) sortProjState.dir*=-1; else{sortProjState.col=col;sortProjState.dir=1;}
+    document.querySelectorAll("table.proj thead th").forEach(t=>{t.classList.remove("sorted");t.textContent=t.textContent.replace(/[▲▼]\s*/g,'');});
+    th.classList.add("sorted"); th.textContent=th.textContent+" "+(sortProjState.dir===1?"▲":"▼");
+    renderProjTable();
+  });
+});
+
+/* ══ FILTER ══ */
+document.getElementById("filter-priority").addEventListener("change",e=>{
+  filterPriority=e.target.value; renderProjTable();
+});
+
+/* ══ FILE UPLOAD ══ */
+document.getElementById("file-input").addEventListener("change",async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  if(!window.XLSX){
+    await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+  }
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:"array"});
+  const sheetName=wb.SheetNames.find(n=>n.includes("Forecast"))||wb.SheetNames[0];
+  const ws=wb.Sheets[sheetName];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  let hIdx=rows.findIndex(r=>r.some&&r.some(c=>String(c||"").includes("Account Name")));
+  if(hIdx===-1){alert("Could not find .Account Name. column in file.");return;}
+  const headers=rows[hIdx].map(h=>String(h||"").trim().toLowerCase());
+  const ci=n=>headers.indexOf(n);
+  const parsed=[];
+  for(let i=hIdx+1;i<rows.length;i++){
+    const r=rows[i]; const nm=r[ci("account name")]; if(!nm) continue;
+    const boxes=parseInt(r[ci("boxes")])||0, ports=parseInt(r[ci("ports")])||0;
+    const prd=String(r[ci("product")]||"").trim();
+    let q="TBD";
+    const dtRaw=r[ci("est. start date")]||r[ci("close date")];
+    if(dtRaw){
+      let m;
+      if(typeof dtRaw==="number"){const d=XLSX.SSF.parse_date_code(dtRaw);m=d.m;}
+      else{m=new Date(dtRaw).getMonth()+1;}
+      q=m<=3?"Q1 2026":m<=6?"Q2 2026":m<=9?"Q3 2026":"Q4 2026";
+    }
+    let closeTxt="";
+    const cd=r[ci("close date")];
+    if(cd){closeTxt=typeof cd==="number"?`${XLSX.SSF.parse_date_code(cd).d}/${XLSX.SSF.parse_date_code(cd).m}/${XLSX.SSF.parse_date_code(cd).y}`:String(cd);}
+    parsed.push({
+      name:String(nm).trim(), priority:String(r[ci("priority")]||"P2").trim(),
+      product:prd, unit:String(r[ci("sensing unit")]||"C-Band 1.0").trim(),
+      boxes, ports, location:String(r[ci("location")]||"").trim().replace(/\s/g,""),
+      quarter:q, status:"Forecast", close_date:closeTxt,
+      miu:prd==="DigitalMarine"?boxes:0, pdu:Math.ceil(boxes/6), fsc:1
+    });
+  }
+  if(!parsed.length){alert("No projects found.");return;}
+  forecastProjects=[...parsed];
+  const now=new Date();
+  uploadDate=`${now.getDate()} ${["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][now.getMonth()]} ${now.getFullYear()}`;
+  renderAll();
+  alert(`✅ ${parsed.length} Forecast projects actualizados.`);
+});
+
+/* ══ GROUP BY toggle ══ */
+document.querySelectorAll(".grp-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    bomGroupBy = btn.dataset.grp;
+    document.querySelectorAll(".grp-btn").forEach(b => {
+      b.style.background = "transparent";
+      b.style.color = "var(--text-muted)";
+    });
+    btn.style.background = "#fff";
+    btn.style.color = "#000";
+    // Hide/show Type column
+    const th = document.getElementById("bom-th-type");
+    const styleEl = document.getElementById("bom-type-col-style");
+    if (bomGroupBy === "part") {
+      if (th) th.style.display = "none";
+      if (styleEl) styleEl.textContent = ".bom-type-col { display: none; }";
+    } else {
+      if (th) th.style.display = "";
+      if (styleEl) styleEl.textContent = "";
+    }
+    renderBoM(getViewProjects());
+  });
+});
+
+/* ══ INIT ══ */
+renderAll();
+</script>
+</body>
+</html>
