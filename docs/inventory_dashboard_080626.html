@@ -179,7 +179,7 @@ select.flt{background:#1a1a1a;border:1px solid var(--border);color:var(--text);p
 <!-- BANNER -->
 <div class="banner">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-  <span><strong>Assumptions:</strong> Single shared location &nbsp;·&nbsp; 1 Firewall max. 6 boxes &nbsp;·&nbsp; 1 PDU per Firewall &nbsp;·&nbsp; FS-Core & Misc Items: 1 kit per project &nbsp;·&nbsp; MIU ships with all 5 fiber patch variants (LC/UCP→SC/APC · SC/UPC · LC/UPC · LC/APC · MU/UPC) &nbsp;·&nbsp; IP Link & Firewall model <strong>⚠️ pending confirmation</strong></span>
+  <span><strong>Assumptions:</strong> Single shared location &nbsp;·&nbsp; 1 Firewall max. 6 boxes &nbsp;·&nbsp; 1 PDU per 4 Firewalls &nbsp;·&nbsp; FS-Core & Misc Items: 1 kit per project &nbsp;·&nbsp; MIU ships with all 5 fiber patch variants (LC/UCP→SC/APC · SC/UPC · LC/UPC · LC/APC · MU/UPC) &nbsp;·&nbsp; IP Link & Firewall model <strong>⚠️ pending confirmation</strong></span>
 </div>
 
 <!-- KPIs -->
@@ -206,13 +206,13 @@ select.flt{background:#1a1a1a;border:1px solid var(--border);color:var(--text);p
     <div class="kpi-icon">⚡</div>
     <div class="kpi-label">PDUs</div>
     <div class="kpi-value" id="kpi-pdu">—</div>
-    <div class="kpi-sub">1 PDU / Firewall</div>
+    <div class="kpi-sub">1 PDU / 4 Firewalls</div>
   </div>
   <div class="kpi orange">
     <div class="kpi-icon">🌊</div>
     <div class="kpi-label">MIUs</div>
     <div class="kpi-value" id="kpi-miu">—</div>
-    <div class="kpi-sub">DigitalMarine only</div>
+    <div class="kpi-sub">⚠️ Pending — DigitalMarine only</div>
   </div>
   <div class="kpi red">
     <div class="kpi-icon">📋</div>
@@ -306,7 +306,7 @@ select.flt{background:#1a1a1a;border:1px solid var(--border);color:var(--text);p
           <th data-col="ports" style="text-align:right">Ports</th>
           <th data-col="firewalls" style="text-align:right">Firewalls ⚠️</th>
           <th data-col="pdu" style="text-align:right">PDUs</th>
-          <th data-col="miu" style="text-align:right">MIU</th>
+          <th data-col="miu" style="text-align:right">MIU ⚠️</th>
           <th data-col="fsc" style="text-align:right">FS-Core</th>
           <th data-col="location">Ubicación</th>
           <th data-col="quarter">Quarter</th>
@@ -329,7 +329,7 @@ const FORECAST_PROJECTS = [
   {name:"BW Digital",   product:"DigitalMarine",priority:"P2",quarter:"Q3 2026",status:"Forecast",location:"AU",close_date:"26/06/2026",unit:"C-Band 1.0",boxes:1, ports:1, miu:1,pdu:1,fsc:1},
   {name:"Binnies",      product:"DigitalLeak",  priority:"P1",quarter:"Q4 2026",status:"Forecast",location:"UK",close_date:"31/08/2026",unit:"C-Band 1.0",boxes:4, ports:8, miu:0,pdu:1,fsc:1},
   {name:"Duke Energy",  product:"DigitalAsset", priority:"P2",quarter:"Q3 2026",status:"Forecast",location:"US",close_date:"30/07/2026",unit:"C-Band 1.0",boxes:2, ports:2, miu:0,pdu:1,fsc:1},
-  {name:"Thames Water", product:"DigitalLeak",  priority:"P1",quarter:"Q4 2026",status:"Forecast",location:"UK",close_date:"30/09/2026",unit:"C-Band 1.0",boxes:20,ports:39,miu:0,pdu:4,fsc:1},
+  {name:"Thames Water", product:"DigitalLeak",  priority:"P1",quarter:"Q4 2026",status:"Forecast",location:"UK",close_date:"30/09/2026",unit:"C-Band 1.0",boxes:20,ports:39,miu:0,pdu:1,fsc:1},
 ];
 const CLOSED_PROJECTS = [
   {name:"EXA",            product:"DigitalMarine",priority:"P0",quarter:"Q2 2026",status:"Closed",location:"UK",   close_date:"Q2 2026",unit:"L-Band 1.1 RE",boxes:2,ports:2, miu:2,pdu:1,fsc:1},
@@ -361,7 +361,7 @@ function buildBomForProjects(projects) {
 
     // MIU — only DigitalMarine
     if (isMarine) {
-      add("MIU","1_MIU","Marine Interface Unit", n);
+      add("MIU","1_MIU","Marine Interface Unit", n, true);
       add("MIU","DC Power","48V DC Power - 1 amp fuses (crimper and lugs included)", n*2);
       add("MIU","Accessories","Amazon Crimper and Ring Terminals (red, blue, yellow)", n);
       add("MIU","Fiber Patch — LC/UCP to SC/APC","LC/UCP to SC/APC 10m — Most common", n);
@@ -382,9 +382,9 @@ function buildBomForProjects(projects) {
     // Power / PDU — PDU units always first; US uses PDUMH15ATNETOEM, Global uses PDUMH20HVATNET
     // Power Cable key is unique per connector type so AU/UK/US lines stay separate in the table
     if (isUS) {
-      add("Power","1_PDUMH15ATNETOEM","Tripplite PDU Switched ATS 120V 15A 5-15R 8 Outlet 2 5-15P Horizontal", p.pdu);
-      add("Power","3_Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", p.pdu);
-      add("Power","4_Power Cable — A,B to C20","A, B, to C20 (United States)", p.pdu*2);
+      add("Power","1_PDUMH15ATNETOEM","Tripplite PDU Switched ATS 120V 15A 5-15R 8 Outlet 2 5-15P Horizontal", Math.ceil(Math.ceil(p.boxes/6)/4));
+      add("Power","3_Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", Math.ceil(Math.ceil(p.boxes/6)/4));
+      add("Power","4_Power Cable — A,B to C20","A, B, to C20 (United States)", Math.ceil(Math.ceil(p.boxes/6)/4)*2);
     } else if (p.location === "AU") {
       add("Power","2_PDUMH20HVATNET","Eaton Tripp Lite 3.8kW Switched ATS PDU — 8×C13 + 2×C19, 1U", p.pdu);
       add("Power","3_Copper Patch-2m","2M CAT6A Snagless Straight-Through Cable, Black", p.pdu);
@@ -464,7 +464,7 @@ function renderKPIs(projects) {
   const totalBoxes = projects.reduce((s,p)=>s+p.boxes,0);
   const totalPorts = projects.reduce((s,p)=>s+p.ports,0);
   const totalMiu   = projects.reduce((s,p)=>s+p.miu,0);
-  const totalPdu   = projects.reduce((s,p)=>s+p.pdu,0);
+  const totalPdu   = projects.reduce((s,p)=>s+Math.ceil(Math.ceil(p.boxes/6)/4),0);
   const totalFw    = projects.reduce((s,p)=>s+Math.ceil(p.boxes/6),0);
   const fc = projects.filter(p=>p.status==="Forecast").length;
   const cl = projects.filter(p=>p.status==="Closed").length;
@@ -642,6 +642,7 @@ function renderProjTable() {
   }
   document.getElementById("proj-tbody").innerHTML = data.map(p=>{
     const fw = Math.ceil(p.boxes/6);
+    const pduCount = Math.ceil(fw/4);
     const priClass = p.priority==="P0"?"badge-p0":p.priority==="P1"?"badge-p1":"badge-p2";
     const stClass  = p.status==="Closed"?"badge-closed":"badge-forecast";
     const priLabel = p.priority==="P0"?"Closed":p.priority;
@@ -655,8 +656,8 @@ function renderProjTable() {
         <td style="text-align:right;font-family:'Bebas Neue',sans-serif;font-size:18px">${p.boxes}</td>
         <td style="text-align:right">${p.ports}</td>
         <td style="text-align:right;color:var(--yellow)">${fw} ⚠️</td>
-        <td style="text-align:right">${p.pdu}</td>
-        <td style="text-align:right;color:${p.miu>0?"var(--orange)":"var(--text-dim)"}">${p.miu||"—"}</td>
+        <td style="text-align:right">${Math.ceil(Math.ceil(p.boxes/6)/4)}</td>
+        <td style="text-align:right;color:${p.miu>0?"var(--orange)":"var(--text-dim)"}">${p.miu>0?p.miu+"":"—"} ${p.product==="DigitalMarine"?"⚠️":""}</td>
         <td style="text-align:right;color:var(--purple)">${p.fsc}</td>
         <td>${p.location}</td>
         <td style="color:var(--text-muted)">${p.quarter}</td>
@@ -744,7 +745,7 @@ document.getElementById("file-input").addEventListener("change",async e=>{
       product:prd, unit:String(r[ci("sensing unit")]||"C-Band 1.0").trim(),
       boxes, ports, location:String(r[ci("location")]||"").trim().replace(/\s/g,""),
       quarter:q, status:"Forecast", close_date:closeTxt,
-      miu:prd==="DigitalMarine"?boxes:0, pdu:Math.ceil(boxes/6), fsc:1
+      miu:prd==="DigitalMarine"?boxes:0, pdu:Math.ceil(Math.ceil(boxes/6)/4), fsc:1
     });
   }
   if(!parsed.length){alert("No projects found.");return;}
